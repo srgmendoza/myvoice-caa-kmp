@@ -1,19 +1,29 @@
 package com.caa.app.presentation.grid
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.caa.app.presentation.components.CategoryFilterChip
 import com.caa.app.presentation.components.ParentalGateDialog
@@ -85,21 +95,73 @@ fun GridScreen(component: GridComponent) {
             }
         }
     ) { padding ->
-        if (state.isLoading) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            if (state.isLoading) {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 140.dp),
+                    modifier = Modifier.fillMaxSize().padding(CaaSpacing.sp8),
+                    contentPadding = PaddingValues(CaaSpacing.sp4)
+                ) {
+                    items(state.pictograms, key = { it.id }) { p ->
+                        PictogramCell(
+                            pictogram = p,
+                            category = p.categoryId?.let { categoriesById[it] },
+                            onClick = { debounce.fire { component.onIntent(GridIntent.TapPictogram(p)) } }
+                        )
+                    }
+                }
             }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 140.dp),
-                modifier = Modifier.fillMaxSize().padding(padding).padding(CaaSpacing.sp8),
-                contentPadding = PaddingValues(CaaSpacing.sp4)
+
+            SpeakingOverlay(visible = state.isSpeaking)
+        }
+    }
+}
+
+@Composable
+private fun SpeakingOverlay(visible: Boolean) {
+    val accent = Color(0xFF43A047)
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(),
+        exit = fadeOut()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(accent.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = accent,
+                shadowElevation = 12.dp,
+                modifier = Modifier.shadow(
+                    elevation = 16.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    ambientColor = accent,
+                    spotColor = accent
+                )
             ) {
-                items(state.pictograms, key = { it.id }) { p ->
-                    PictogramCell(
-                        pictogram = p,
-                        category = p.categoryId?.let { categoriesById[it] },
-                        onClick = { debounce.fire { component.onIntent(GridIntent.TapPictogram(p)) } }
+                Row(
+                    modifier = Modifier.padding(horizontal = 40.dp, vertical = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        Icons.Rounded.Mic,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Text(
+                        text = "Hablando…",
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black
                     )
                 }
             }

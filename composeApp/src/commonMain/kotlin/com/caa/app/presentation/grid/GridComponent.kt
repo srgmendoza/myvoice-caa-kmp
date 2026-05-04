@@ -35,6 +35,7 @@ class DefaultGridComponent(
     override val state: Value<GridState> = _state
 
     private val selectedCategory = MutableStateFlow<Long?>(null)
+    private var sentenceSpeakActive = false
 
     init {
         scope.launch { repository.seedDefaults() }
@@ -50,6 +51,13 @@ class DefaultGridComponent(
                 _state.update { it.copy(pictograms = pictos, categories = cats, isLoading = false, debounceMs = debounce) }
             }
         }
+
+        scope.launch {
+            speech.isSpeaking.collect { speaking ->
+                if (!speaking) sentenceSpeakActive = false
+                _state.update { it.copy(isSpeaking = speaking && sentenceSpeakActive) }
+            }
+        }
     }
 
     override fun onIntent(intent: GridIntent) {
@@ -60,7 +68,10 @@ class DefaultGridComponent(
             }
             GridIntent.SpeakSentence -> {
                 val text = _state.value.sentence.joinToString(" ") { it.speech }
-                if (text.isNotBlank()) speech.speak(text)
+                if (text.isNotBlank()) {
+                    sentenceSpeakActive = true
+                    speech.speak(text)
+                }
             }
             GridIntent.ClearSentence -> _state.update { it.copy(sentence = emptyList()) }
             GridIntent.RemoveLastFromSentence -> _state.update {
