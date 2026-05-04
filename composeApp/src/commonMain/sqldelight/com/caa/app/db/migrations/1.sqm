@@ -1,0 +1,1 @@
+ALTER TABLE CategoryEntity ADD COLUMN fitzgeraldKey TEXT NOT NULL DEFAULT 'verbs';

@@ -1,0 +1,40 @@
+CREATE TABLE PictogramEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    label TEXT NOT NULL,
+    speech TEXT NOT NULL,
+    imagePath TEXT NOT NULL,
+    categoryId INTEGER,
+    colorHex TEXT,
+    sortOrder INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE CategoryEntity (
+    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    colorHex TEXT NOT NULL,
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    fitzgeraldKey TEXT NOT NULL DEFAULT 'verbs'
+);
+
+selectAllPictograms:
+SELECT * FROM PictogramEntity ORDER BY sortOrder ASC;
+
+selectByCategory:
+SELECT * FROM PictogramEntity WHERE categoryId = ? ORDER BY sortOrder ASC;
+
+selectAllCategories:
+SELECT * FROM CategoryEntity ORDER BY sortOrder ASC;
+
+insertPictogram:
+INSERT INTO PictogramEntity(label, speech, imagePath, categoryId, colorHex, sortOrder)
+VALUES (?, ?, ?, ?, ?, ?);
+
+insertCategory:
+INSERT INTO CategoryEntity(name, colorHex, sortOrder, fitzgeraldKey) VALUES (?, ?, ?, ?);
+
+deletePictogram:
+DELETE FROM PictogramEntity WHERE id = ?;
+
+updatePictogram:
+UPDATE PictogramEntity SET label = ?, speech = ?, imagePath = ?, categoryId = ?, colorHex = ?, sortOrder = ?
+WHERE id = ?;
