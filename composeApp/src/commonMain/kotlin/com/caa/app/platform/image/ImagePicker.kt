@@ -10,6 +10,12 @@ expect fun rememberImagePicker(onPicked: (String) -> Unit): () -> Unit
 @Composable
 expect fun rememberFilePicker(onPicked: (String) -> Unit): () -> Unit
 
+// System camera capture. Returns persisted file:// path via onPicked.
+// Returns null launcher when camera unavailable on platform — caller should
+// hide the entry point.
+@Composable
+expect fun rememberCameraCapture(onPicked: (String) -> Unit): (() -> Unit)?
+
 // Common image mime list — used by file picker filter.
 val ImageMimeTypes: Array<String> = arrayOf(
     "image/jpeg",
