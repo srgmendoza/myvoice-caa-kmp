@@ -43,6 +43,7 @@ import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.caa.app.domain.model.Category
 import com.caa.app.domain.model.FitzgeraldKey
 import com.caa.app.domain.model.Pictogram
+import com.caa.app.platform.image.rememberCameraCapture
 import com.caa.app.platform.image.rememberFilePicker
 import com.caa.app.platform.image.rememberImagePicker
 import com.caa.app.presentation.components.CropDialog
@@ -657,6 +658,7 @@ private fun FormSheet(
                 FormSectionLabel("O usar foto real")
                 val launchGallery = rememberImagePicker { newPath -> pendingCropPath = newPath }
                 val launchFiles = rememberFilePicker { newPath -> pendingCropPath = newPath }
+                val launchCamera = rememberCameraCapture { newPath -> pendingCropPath = newPath }
                 val isPhoto = !imagePath.startsWith("ic_")
                 Column(
                     modifier = Modifier
@@ -713,7 +715,7 @@ private fun FormSheet(
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Galería · Archivos",
+                            if (launchCamera != null) "Cámara · Galería · Archivos" else "Galería · Archivos",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFBBBBBB)
@@ -726,6 +728,13 @@ private fun FormSheet(
                         Spacer(Modifier.height(10.dp))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (launchCamera != null) {
+                            OutlinedButton(onClick = { launchCamera() }) {
+                                Icon(Icons.Rounded.PhotoCamera, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("Cámara", fontSize = 13.sp)
+                            }
+                        }
                         OutlinedButton(onClick = { launchGallery() }) {
                             Icon(Icons.Rounded.PhotoLibrary, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))

@@ -1,13 +1,16 @@
 package com.caa.app.platform.image
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,6 +31,41 @@ actual fun rememberImagePicker(onPicked: (String) -> Unit): () -> Unit {
         launcher.launch(
             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
         )
+    }
+}
+
+@Composable
+actual fun rememberCameraCapture(onPicked: (String) -> Unit): (() -> Unit)? {
+    val context = LocalContext.current
+    val hasCamera = remember(context) {
+        context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+    }
+    if (!hasCamera) return null
+
+    val pendingHolder = remember { arrayOfNulls<File>(1) }
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        val file = pendingHolder[0]
+        pendingHolder[0] = null
+        if (success && file != null && file.exists() && file.length() > 0) {
+            onPicked("file://${file.absolutePath}")
+        } else {
+            file?.delete()
+        }
+    }
+
+    return {
+        val dir = File(context.filesDir, "pictograms").apply { mkdirs() }
+        val file = File(dir, "${UUID.randomUUID()}.jpg")
+        pendingHolder[0] = file
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        launcher.launch(uri)
     }
 }
 
