@@ -1,5 +1,8 @@
 package com.caa.app.platform.tts
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import platform.AVFAudio.AVAudioSession
 import platform.AVFAudio.AVAudioSessionCategoryPlayback
 import platform.AVFAudio.AVSpeechBoundaryImmediate
@@ -13,6 +16,9 @@ class IosSpeechEngine : SpeechEngine {
     private val synth = AVSpeechSynthesizer()
     private var rate: Float = 0.5f
     private var pitch: Float = 1.0f
+
+    private val _isSpeaking = MutableStateFlow(false)
+    override val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
 
     init {
         runCatching {
