@@ -45,6 +45,7 @@ import com.caa.app.domain.model.FitzgeraldKey
 import com.caa.app.domain.model.Pictogram
 import com.caa.app.platform.image.rememberFilePicker
 import com.caa.app.platform.image.rememberImagePicker
+import com.caa.app.presentation.components.CropDialog
 import com.caa.app.presentation.components.FitzPill
 import com.caa.app.presentation.components.FitzTagChip
 import com.caa.app.presentation.components.LivePictCard
@@ -508,6 +509,7 @@ private fun FormSheet(
     var speech by remember(initial) { mutableStateOf(initial?.speech ?: "") }
     var imagePath by remember(initial) { mutableStateOf(initial?.imagePath ?: "ic_default") }
     var fitzKey by remember(initial) { mutableStateOf(initialKey) }
+    var pendingCropPath by remember(initial) { mutableStateOf<String?>(null) }
 
     val canSave = label.isNotBlank() && speech.isNotBlank()
     val palette = fitzgeraldOf(fitzKey)
@@ -653,8 +655,8 @@ private fun FormSheet(
 
                 // Photo area
                 FormSectionLabel("O usar foto real")
-                val launchGallery = rememberImagePicker { newPath -> imagePath = newPath }
-                val launchFiles = rememberFilePicker { newPath -> imagePath = newPath }
+                val launchGallery = rememberImagePicker { newPath -> pendingCropPath = newPath }
+                val launchFiles = rememberFilePicker { newPath -> pendingCropPath = newPath }
                 val isPhoto = !imagePath.startsWith("ic_")
                 Column(
                     modifier = Modifier
@@ -755,6 +757,17 @@ private fun FormSheet(
                 )
             }
         }
+    }
+
+    pendingCropPath?.let { src ->
+        CropDialog(
+            sourcePath = src,
+            onCancel = { pendingCropPath = null },
+            onConfirm = { cropped ->
+                imagePath = cropped
+                pendingCropPath = null
+            }
+        )
     }
 }
 
