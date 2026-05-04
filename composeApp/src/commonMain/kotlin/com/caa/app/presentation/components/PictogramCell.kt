@@ -7,7 +7,13 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -71,16 +77,24 @@ fun PictogramCell(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
-                    .padding(CaaSpacing.sp10),
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                PictogramImage(
-                    path = pictogram.imagePath,
-                    contentDescription = pictogram.label,
-                    modifier = Modifier.fillMaxSize(0.78f),
-                    tint = if (pictogram.imagePath.startsWith("ic_")) onSurface else Color.Unspecified
-                )
+                if (isPhotoPath(pictogram.imagePath)) {
+                    PhotoTile(
+                        path = pictogram.imagePath,
+                        label = pictogram.label,
+                        accent = accent,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    PictogramImage(
+                        path = pictogram.imagePath,
+                        contentDescription = pictogram.label,
+                        modifier = Modifier.fillMaxSize(0.78f).padding(CaaSpacing.sp10),
+                        tint = onSurface
+                    )
+                }
             }
             Text(
                 text = pictogram.label,

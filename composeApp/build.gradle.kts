@@ -52,6 +52,7 @@ kotlin {
         }
         androidMain.dependencies {
             implementation(compose.preview)
+            implementation(compose.uiTooling)
             implementation(libs.androidx.activityCompose)
             implementation(libs.androidx.core.ktx)
             implementation(libs.koin.android)
@@ -59,6 +60,7 @@ kotlin {
             implementation(libs.androidx.datastore.preferences)
             implementation(libs.kotlinx.coroutines.android)
             implementation(libs.androidx.core.splashscreen)
+            implementation(libs.androidx.exifinterface)
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.native)

@@ -36,17 +36,24 @@ fun MiniPictCard(
         Column {
             Box(Modifier.fillMaxWidth().height(7.dp).background(accent))
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(4.dp),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                PictogramImage(
-                    path = pictogram.imagePath,
-                    contentDescription = pictogram.label,
-                    modifier = Modifier.fillMaxSize(),
-                    tint = if (pictogram.imagePath.startsWith("ic_")) accent else Color.Unspecified
-                )
+                if (isPhotoPath(pictogram.imagePath)) {
+                    PhotoTile(
+                        path = pictogram.imagePath,
+                        label = pictogram.label,
+                        accent = accent,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    PictogramImage(
+                        path = pictogram.imagePath,
+                        contentDescription = pictogram.label,
+                        modifier = Modifier.fillMaxSize().padding(4.dp),
+                        tint = accent
+                    )
+                }
             }
         }
     }

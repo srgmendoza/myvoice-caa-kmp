@@ -44,16 +44,26 @@ fun LivePictCard(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
-                    .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 4.dp),
+                    .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                PictogramImage(
-                    path = imagePath,
-                    contentDescription = label,
-                    modifier = Modifier.fillMaxSize(),
-                    tint = if (imagePath.startsWith("ic_")) accent else Color.Unspecified
-                )
+                if (isPhotoPath(imagePath)) {
+                    PhotoTile(
+                        path = imagePath,
+                        label = label,
+                        accent = accent,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    PictogramImage(
+                        path = imagePath,
+                        contentDescription = label,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 4.dp),
+                        tint = accent
+                    )
+                }
             }
             Box(
                 modifier = Modifier

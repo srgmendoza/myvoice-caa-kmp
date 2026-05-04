@@ -1,13 +1,18 @@
 package com.caa.app.presentation.components
 
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
+import com.caa.app.presentation.theme.CaaRadius
 
 // Resolves path to a renderable: ic_* preset icon, file:// local file, http(s):// remote (future Firebase).
 @Composable
@@ -30,8 +35,8 @@ fun PictogramImage(
             AsyncImage(
                 model = path,
                 contentDescription = contentDescription,
-                modifier = modifier,
-                contentScale = ContentScale.Fit,
+                modifier = modifier.clip(shape = RoundedCornerShape(topStart = CaaRadius.md, topEnd = CaaRadius.md)),
+                contentScale = ContentScale.FillBounds,
                 colorFilter = if (tint == Color.Unspecified) null else ColorFilter.tint(tint)
             )
         }
