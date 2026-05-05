@@ -27,12 +27,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import caa_kmp.composeapp.generated.resources.Res
+import caa_kmp.composeapp.generated.resources.sentence_clear_cd
+import caa_kmp.composeapp.generated.resources.sentence_placeholder
+import caa_kmp.composeapp.generated.resources.sentence_remove_last_cd
+import caa_kmp.composeapp.generated.resources.sentence_speak_cd
 import com.caa.app.domain.model.Category
 import com.caa.app.domain.model.Pictogram
 import com.caa.app.presentation.theme.CaaElevation
 import com.caa.app.presentation.theme.CaaRadius
 import com.caa.app.presentation.theme.CaaSpacing
 import com.caa.app.presentation.theme.fitzgeraldOf
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SentenceBar(
@@ -69,7 +75,7 @@ fun SentenceBar(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Toca un pictograma para empezar",
+                            text = stringResource(Res.string.sentence_placeholder),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -94,21 +100,21 @@ fun SentenceBar(
             }
 
             SentenceIconButton(
-                icon = { Icon(Icons.AutoMirrored.Rounded.Backspace, contentDescription = "Borrar último") },
+                icon = { Icon(Icons.AutoMirrored.Rounded.Backspace, contentDescription = stringResource(Res.string.sentence_remove_last_cd)) },
                 onClick = onRemoveLast,
                 container = MaterialTheme.colorScheme.surfaceVariant,
                 content = MaterialTheme.colorScheme.onSurface,
                 size = 56.dp
             )
             SentenceIconButton(
-                icon = { Icon(Icons.Rounded.Delete, contentDescription = "Limpiar") },
+                icon = { Icon(Icons.Rounded.Delete, contentDescription = stringResource(Res.string.sentence_clear_cd)) },
                 onClick = onClear,
                 container = MaterialTheme.colorScheme.surfaceVariant,
                 content = MaterialTheme.colorScheme.onSurface,
                 size = 56.dp
             )
             SentenceIconButton(
-                icon = { Icon(Icons.AutoMirrored.Rounded.VolumeUp, contentDescription = "Hablar") },
+                icon = { Icon(Icons.AutoMirrored.Rounded.VolumeUp, contentDescription = stringResource(Res.string.sentence_speak_cd)) },
                 onClick = onSpeak,
                 container = MaterialTheme.colorScheme.primary,
                 content = MaterialTheme.colorScheme.onPrimary,

@@ -24,6 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import caa_kmp.composeapp.generated.resources.Res
+import caa_kmp.composeapp.generated.resources.category_all
+import caa_kmp.composeapp.generated.resources.grid_settings_cd
+import caa_kmp.composeapp.generated.resources.grid_speaking
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.caa.app.presentation.components.CategoryFilterChip
 import com.caa.app.presentation.components.ParentalGateDialog
@@ -32,6 +36,7 @@ import com.caa.app.presentation.components.SentenceBar
 import com.caa.app.presentation.components.rememberDebounce
 import com.caa.app.presentation.theme.CaaSpacing
 import com.caa.app.presentation.theme.fitzgeraldOf
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -68,7 +73,7 @@ fun GridScreen(component: GridComponent) {
                     ) {
                         item {
                             CategoryFilterChip(
-                                label = "Todos",
+                                label = stringResource(Res.string.category_all),
                                 selected = state.selectedCategoryId == null,
                                 accent = MaterialTheme.colorScheme.primary,
                                 onAccent = MaterialTheme.colorScheme.onPrimary,
@@ -91,7 +96,7 @@ fun GridScreen(component: GridComponent) {
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showGate = true }) {
-                Icon(Icons.Rounded.Settings, contentDescription = "Configuración")
+                Icon(Icons.Rounded.Settings, contentDescription = stringResource(Res.string.grid_settings_cd))
             }
         }
     ) { padding ->
@@ -158,7 +163,7 @@ private fun SpeakingOverlay(visible: Boolean) {
                         modifier = Modifier.size(32.dp)
                     )
                     Text(
-                        text = "Hablando…",
+                        text = stringResource(Res.string.grid_speaking),
                         color = Color.White,
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Black
