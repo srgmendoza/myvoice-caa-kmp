@@ -35,11 +35,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import caa_kmp.composeapp.generated.resources.Res
+import caa_kmp.composeapp.generated.resources.action_cancel
+import caa_kmp.composeapp.generated.resources.crop_action
+import caa_kmp.composeapp.generated.resources.crop_hint
+import caa_kmp.composeapp.generated.resources.crop_title
 import coil3.compose.AsyncImage
 import com.caa.app.platform.image.rememberImageCropper
 import kotlin.math.max
 import kotlin.math.min
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CropDialog(
@@ -99,10 +105,10 @@ fun CropDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { if (!working) onCancel() }) {
-                        Icon(Icons.Rounded.Close, "Cancelar", tint = Color.White)
+                        Icon(Icons.Rounded.Close, stringResource(Res.string.action_cancel), tint = Color.White)
                     }
                     Text(
-                        "Recortar imagen",
+                        stringResource(Res.string.crop_title),
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Black,
@@ -153,7 +159,7 @@ fun CropDialog(
                 }
 
                 Text(
-                    "Arrastra y pellizca para encuadrar",
+                    stringResource(Res.string.crop_hint),
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp,
                     modifier = Modifier
@@ -171,7 +177,7 @@ fun CropDialog(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     FooterButton(
-                        text = "Cancelar",
+                        text = stringResource(Res.string.action_cancel),
                         background = Color(0xFF333333),
                         contentColor = Color.White,
                         enabled = !working,
@@ -179,7 +185,7 @@ fun CropDialog(
                         onClick = onCancel
                     )
                     FooterButton(
-                        text = "Recortar",
+                        text = stringResource(Res.string.crop_action),
                         leadingIcon = Icons.Rounded.Check,
                         background = Brush.linearGradient(
                             listOf(Color(0xFF43A047), Color(0xFF2E7D32))
