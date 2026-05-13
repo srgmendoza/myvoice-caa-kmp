@@ -11,8 +11,6 @@ import com.arkivanov.decompose.value.Value
 import com.caa.app.domain.repository.PictogramRepository
 import com.caa.app.domain.repository.SettingsRepository
 import com.caa.app.platform.tts.SpeechEngine
-import com.caa.app.presentation.edit.DefaultEditComponent
-import com.caa.app.presentation.edit.EditComponent
 import com.caa.app.presentation.grid.DefaultGridComponent
 import com.caa.app.presentation.grid.GridComponent
 import com.caa.app.presentation.settings.DefaultSettingsComponent
@@ -24,7 +22,7 @@ interface RootComponent {
 
     sealed class Child {
         data class Grid(val component: GridComponent) : Child()
-        data class Edit(val component: EditComponent) : Child()
+        data class Parent(val component: GridComponent) : Child()
         data class Settings(val component: SettingsComponent) : Child()
     }
 }
@@ -39,7 +37,7 @@ class DefaultRootComponent(
     @Serializable
     private sealed interface Config {
         @Serializable data object Grid : Config
-        @Serializable data object Edit : Config
+        @Serializable data object Parent : Config
         @Serializable data object Settings : Config
     }
 
@@ -58,10 +56,18 @@ class DefaultRootComponent(
     private fun createChild(config: Config, ctx: ComponentContext): RootComponent.Child =
         when (config) {
             Config.Grid -> RootComponent.Child.Grid(
-                DefaultGridComponent(ctx, repository, settings, speech) { nav.push(Config.Edit) }
+                DefaultGridComponent(
+                    ctx, repository, settings, speech,
+                    onOpenSettings = { nav.push(Config.Settings) },
+                    onOpenParentMode = { nav.push(Config.Parent) }
+                )
             )
-            Config.Edit -> RootComponent.Child.Edit(
-                DefaultEditComponent(ctx, repository, { nav.push(Config.Settings) }, { nav.pop() })
+            Config.Parent -> RootComponent.Child.Parent(
+                DefaultGridComponent(
+                    ctx, repository, settings, speech,
+                    onOpenSettings = { nav.push(Config.Settings) },
+                    isParentMode = true
+                )
             )
             Config.Settings -> RootComponent.Child.Settings(
                 DefaultSettingsComponent(ctx, settings) { nav.pop() }
