@@ -17,8 +17,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import caa_kmp.composeapp.generated.resources.Res
+import caa_kmp.composeapp.generated.resources.preview_label_placeholder
 import com.caa.app.domain.model.Category
 import com.caa.app.presentation.theme.fitzgeraldOf
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun LivePictCard(
@@ -72,7 +75,7 @@ fun LivePictCard(
                     .padding(horizontal = 6.dp, vertical = 6.dp),
                 contentAlignment = Alignment.Center
             ) {
-                val display = label.ifBlank { "ETIQUETA" }
+                val display = label.ifBlank { stringResource(Res.string.preview_label_placeholder) }
                 Text(
                     text = display.uppercase(),
                     color = if (label.isBlank()) Color(0xFFBBBBBB) else onSurface,

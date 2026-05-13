@@ -13,7 +13,11 @@ import android.speech.tts.Voice
 import android.util.Log
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 private const val TAG = "AndroidSpeechEngine"
 private const val GOOGLE_TTS_PKG = "com.google.android.tts"
@@ -23,7 +27,17 @@ class AndroidSpeechEngine(private val context: Context) : SpeechEngine {
     private val initialized = AtomicBoolean(false)
     private val recreating = AtomicBoolean(false)
     private val utteranceCounter = AtomicLong(0)
+    private val activeUtterances = AtomicInteger(0)
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    private val _isSpeaking = MutableStateFlow(false)
+    override val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
+
+    private fun bumpSpeaking(delta: Int) {
+        val n = activeUtterances.addAndGet(delta).coerceAtLeast(0)
+        if (n == 0) activeUtterances.set(0)
+        _isSpeaking.value = n > 0
+    }
 
     private val pending = ArrayDeque<Pair<String, Boolean>>()
 
@@ -61,16 +75,24 @@ class AndroidSpeechEngine(private val context: Context) : SpeechEngine {
                 tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
                         Log.i(TAG, "utterance onStart id=$utteranceId")
+                        bumpSpeaking(+1)
                     }
                     override fun onDone(utteranceId: String?) {
                         Log.i(TAG, "utterance onDone id=$utteranceId")
+                        bumpSpeaking(-1)
                     }
                     @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String?) {
                         Log.w(TAG, "utterance onError(legacy) id=$utteranceId")
+                        bumpSpeaking(-1)
                     }
                     override fun onError(utteranceId: String?, errorCode: Int) {
                         Log.w(TAG, "utterance onError id=$utteranceId code=$errorCode")
+                        bumpSpeaking(-1)
+                    }
+                    override fun onStop(utteranceId: String?, interrupted: Boolean) {
+                        Log.i(TAG, "utterance onStop id=$utteranceId interrupted=$interrupted")
+                        bumpSpeaking(-1)
                     }
                 })
                 initialized.set(true)
@@ -212,6 +234,8 @@ class AndroidSpeechEngine(private val context: Context) : SpeechEngine {
         tts = null
         runCatching { old?.stop() }
         runCatching { old?.shutdown() }
+        activeUtterances.set(0)
+        _isSpeaking.value = false
         // Slight delay so old service unbind finishes before new bind
         mainHandler.postDelayed({ create() }, 100)
     }
@@ -233,7 +257,11 @@ class AndroidSpeechEngine(private val context: Context) : SpeechEngine {
         }
     }
 
-    override fun stop() { runCatching { tts?.stop() } }
+    override fun stop() {
+        runCatching { tts?.stop() }
+        activeUtterances.set(0)
+        _isSpeaking.value = false
+    }
     override fun setRate(rate: Float) {
         this.rate = rate
         runCatching { tts?.setSpeechRate(rate) }
@@ -246,6 +274,8 @@ class AndroidSpeechEngine(private val context: Context) : SpeechEngine {
         initialized.set(false)
         runCatching { tts?.stop(); tts?.shutdown() }
         tts = null
+        activeUtterances.set(0)
+        _isSpeaking.value = false
     }
 }
 

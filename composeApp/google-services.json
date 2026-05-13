@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "105547858043",
+    "project_id": "communicator-5dfad",
+    "storage_bucket": "communicator-5dfad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:105547858043:android:49414b8417bd3bb28122de",
+        "android_client_info": {
+          "package_name": "com.caa.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBc1Jt2NiicDUd5Sb8bsIyGwGFcBwNZgd0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

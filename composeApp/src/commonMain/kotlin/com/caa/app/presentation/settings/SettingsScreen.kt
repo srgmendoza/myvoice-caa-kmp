@@ -6,9 +6,15 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import caa_kmp.composeapp.generated.resources.Res
+import caa_kmp.composeapp.generated.resources.action_back
+import caa_kmp.composeapp.generated.resources.settings_debounce
+import caa_kmp.composeapp.generated.resources.settings_debounce_helper
+import caa_kmp.composeapp.generated.resources.settings_title
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.caa.app.domain.model.AppSettings
 import com.caa.app.presentation.theme.CaaSpacing
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,10 +25,10 @@ fun SettingsScreen(component: SettingsComponent) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Ajustes") },
+                title = { Text(stringResource(Res.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = component::onBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Volver")
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(Res.string.action_back))
                     }
                 }
             )
@@ -35,12 +41,12 @@ fun SettingsScreen(component: SettingsComponent) {
                 .padding(CaaSpacing.sp16)
         ) {
             Text(
-                text = "Tiempo entre toques",
+                text = stringResource(Res.string.settings_debounce),
                 style = MaterialTheme.typography.titleMedium
             )
             Spacer(Modifier.height(CaaSpacing.sp4))
             Text(
-                text = "Evita pulsaciones repetidas accidentales. Más tiempo = más protección, menos respuesta.",
+                text = stringResource(Res.string.settings_debounce_helper),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

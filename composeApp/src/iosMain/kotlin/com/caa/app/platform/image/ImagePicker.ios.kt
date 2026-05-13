@@ -11,3 +11,6 @@ actual fun rememberImagePicker(onPicked: (String) -> Unit): () -> Unit {
 actual fun rememberFilePicker(onPicked: (String) -> Unit): () -> Unit {
     return { /* iOS file picker pending — wire UIDocumentPickerViewController later */ }
 }
+
+@Composable
+actual fun rememberCameraCapture(onPicked: (String) -> Unit): (() -> Unit)? = null

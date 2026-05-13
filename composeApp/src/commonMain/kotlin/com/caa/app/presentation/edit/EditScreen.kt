@@ -39,10 +39,57 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import caa_kmp.composeapp.generated.resources.Res
+import caa_kmp.composeapp.generated.resources.action_back
+import caa_kmp.composeapp.generated.resources.action_cancel
+import caa_kmp.composeapp.generated.resources.action_close
+import caa_kmp.composeapp.generated.resources.action_delete
+import caa_kmp.composeapp.generated.resources.action_search
+import caa_kmp.composeapp.generated.resources.action_settings
+import caa_kmp.composeapp.generated.resources.category_all
+import caa_kmp.composeapp.generated.resources.delete_subtitle
+import caa_kmp.composeapp.generated.resources.delete_title
+import caa_kmp.composeapp.generated.resources.edit_add_button
+import caa_kmp.composeapp.generated.resources.edit_empty_add
+import caa_kmp.composeapp.generated.resources.edit_empty_subtitle
+import caa_kmp.composeapp.generated.resources.edit_empty_title
+import caa_kmp.composeapp.generated.resources.edit_no_match_subtitle
+import caa_kmp.composeapp.generated.resources.edit_no_match_title
+import caa_kmp.composeapp.generated.resources.edit_parent_badge
+import caa_kmp.composeapp.generated.resources.edit_subtitle
+import caa_kmp.composeapp.generated.resources.edit_title
+import caa_kmp.composeapp.generated.resources.edit_toast_added
+import caa_kmp.composeapp.generated.resources.edit_toast_deleted
+import caa_kmp.composeapp.generated.resources.edit_toast_updated
+import caa_kmp.composeapp.generated.resources.form_edit_subtitle
+import caa_kmp.composeapp.generated.resources.form_edit_title
+import caa_kmp.composeapp.generated.resources.form_label
+import caa_kmp.composeapp.generated.resources.form_label_helper
+import caa_kmp.composeapp.generated.resources.form_label_placeholder
+import caa_kmp.composeapp.generated.resources.form_new_subtitle
+import caa_kmp.composeapp.generated.resources.form_new_title
+import caa_kmp.composeapp.generated.resources.form_photo_hint_change
+import caa_kmp.composeapp.generated.resources.form_photo_hint_formats
+import caa_kmp.composeapp.generated.resources.form_photo_hint_sources_full
+import caa_kmp.composeapp.generated.resources.form_photo_hint_sources_short
+import caa_kmp.composeapp.generated.resources.form_photo_selected
+import caa_kmp.composeapp.generated.resources.form_picker_camera
+import caa_kmp.composeapp.generated.resources.form_picker_files
+import caa_kmp.composeapp.generated.resources.form_picker_gallery
+import caa_kmp.composeapp.generated.resources.form_preview
+import caa_kmp.composeapp.generated.resources.form_save_edit
+import caa_kmp.composeapp.generated.resources.form_save_new
+import caa_kmp.composeapp.generated.resources.form_section_category
+import caa_kmp.composeapp.generated.resources.form_section_icon
+import caa_kmp.composeapp.generated.resources.form_section_photo
+import caa_kmp.composeapp.generated.resources.form_speech
+import caa_kmp.composeapp.generated.resources.form_speech_helper
+import caa_kmp.composeapp.generated.resources.form_speech_placeholder
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
 import com.caa.app.domain.model.Category
 import com.caa.app.domain.model.FitzgeraldKey
 import com.caa.app.domain.model.Pictogram
+import com.caa.app.platform.image.rememberCameraCapture
 import com.caa.app.platform.image.rememberFilePicker
 import com.caa.app.platform.image.rememberImagePicker
 import com.caa.app.presentation.components.CropDialog
@@ -54,6 +101,7 @@ import com.caa.app.presentation.components.PictogramIcons
 import com.caa.app.presentation.components.PictogramImage
 import com.caa.app.presentation.theme.fitzgeraldOf
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
 
 private val DangerColor = Color(0xFFE53935)
 private val DangerLight = Color(0xFFFFF5F5)
@@ -85,6 +133,9 @@ fun EditScreen(component: EditComponent) {
         snackbarHost.currentSnackbarData?.dismiss()
         snackbarHost.showSnackbar(msg)
     }
+
+    val toastAdded = stringResource(Res.string.edit_toast_added)
+    val toastUpdated = stringResource(Res.string.edit_toast_updated)
 
     val categoriesByKey = remember(state.categories) {
         state.categories.groupBy { it.key }.mapValues { it.value.first() }
@@ -170,11 +221,11 @@ fun EditScreen(component: EditComponent) {
                         when (val m = formMode) {
                             FormMode.Add -> {
                                 component.onAdd(label, speech, imagePath, categoryIdFor(key))
-                                toast("Pictograma añadido")
+                                toast(toastAdded)
                             }
                             is FormMode.Edit -> {
                                 component.onUpdate(m.pict.id, label, speech, imagePath, categoryIdFor(key))
-                                toast("Pictograma actualizado")
+                                toast(toastUpdated)
                             }
                             FormMode.None -> {}
                         }
@@ -192,12 +243,13 @@ fun EditScreen(component: EditComponent) {
 
             // Delete confirm dialog
             deletePict?.let { p ->
+                val toastDeleted = stringResource(Res.string.edit_toast_deleted, p.label)
                 DeleteDialog(
                     pict = p,
                     category = categoryById[p.categoryId],
                     onConfirm = {
                         component.onDelete(p.id)
-                        toast("\"${p.label}\" eliminado")
+                        toast(toastDeleted)
                         deletePict = null
                     },
                     onCancel = { deletePict = null }
@@ -225,27 +277,27 @@ private fun HeaderBar(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             SquareIconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Rounded.ArrowBack, "Volver", tint = Color(0xFF999999))
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(Res.string.action_back), tint = Color(0xFF999999))
             }
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Pictogramas",
+                    stringResource(Res.string.edit_title),
                     fontSize = 22.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    "Modo padres · $total pictogramas",
+                    stringResource(Res.string.edit_subtitle, total),
                     fontSize = 12.sp,
                     color = MutedText
                 )
             }
             ParentBadge()
             SquareIconButton(onClick = onSettings) {
-                Icon(Icons.Rounded.Settings, "Ajustes", tint = Color(0xFF999999))
+                Icon(Icons.Rounded.Settings, stringResource(Res.string.action_settings), tint = Color(0xFF999999))
             }
             GradientButton(
-                text = "Añadir",
+                text = stringResource(Res.string.edit_add_button),
                 leadingIcon = Icons.Rounded.Add,
                 onClick = onAdd
             )
@@ -266,7 +318,7 @@ private fun ParentBadge() {
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Icon(Icons.Rounded.Lock, null, tint = WarnColor, modifier = Modifier.size(14.dp))
-            Text("Padres", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = WarnColor)
+            Text(stringResource(Res.string.edit_parent_badge), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, color = WarnColor)
         }
     }
 }
@@ -333,7 +385,7 @@ private fun FilterBar(
             OutlinedTextField(
                 value = search,
                 onValueChange = onSearch,
-                placeholder = { Text("Buscar…", color = Color(0xFFAAAAAA)) },
+                placeholder = { Text(stringResource(Res.string.action_search), color = Color(0xFFAAAAAA)) },
                 leadingIcon = { Icon(Icons.Rounded.Search, null, tint = Color(0xFFAAAAAA)) },
                 singleLine = true,
                 shape = RoundedCornerShape(24.dp),
@@ -349,7 +401,7 @@ private fun FilterBar(
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item {
                     FitzPill(
-                        label = "Todos",
+                        label = stringResource(Res.string.category_all),
                         accent = Color(0xFF555555),
                         accentFg = Color.White,
                         selected = filterKey == null,
@@ -473,20 +525,20 @@ private fun ColumnScope.EmptyState(empty: Boolean, onAdd: () -> Unit) {
         }
         Spacer(Modifier.height(16.dp))
         Text(
-            if (empty) "Sin pictogramas" else "Nada coincide",
+            if (empty) stringResource(Res.string.edit_empty_title) else stringResource(Res.string.edit_no_match_title),
             fontSize = 18.sp,
             fontWeight = FontWeight.Black,
             color = Color(0xFFAAAAAA)
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            if (empty) "Añade el primero para empezar" else "Prueba con otra búsqueda o filtro",
+            if (empty) stringResource(Res.string.edit_empty_subtitle) else stringResource(Res.string.edit_no_match_subtitle),
             fontSize = 14.sp,
             color = Color(0xFFBBBBBB)
         )
         if (empty) {
             Spacer(Modifier.height(16.dp))
-            GradientButton(text = "Añadir pictograma", leadingIcon = Icons.Rounded.Add, onClick = onAdd)
+            GradientButton(text = stringResource(Res.string.edit_empty_add), leadingIcon = Icons.Rounded.Add, onClick = onAdd)
         }
     }
 }
@@ -534,17 +586,17 @@ private fun FormSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 SquareIconButton(onClick = onClose) {
-                    Icon(Icons.Rounded.Close, "Cerrar", tint = Color(0xFF666666))
+                    Icon(Icons.Rounded.Close, stringResource(Res.string.action_close), tint = Color(0xFF666666))
                 }
                 Column(Modifier.weight(1f)) {
                     Text(
-                        if (isEdit) "Editar pictograma" else "Nuevo pictograma",
+                        if (isEdit) stringResource(Res.string.form_edit_title) else stringResource(Res.string.form_new_title),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        if (isEdit) "Editando: ${initial?.label.orEmpty()}" else "Añadir al tablero",
+                        if (isEdit) stringResource(Res.string.form_edit_subtitle, initial?.label.orEmpty()) else stringResource(Res.string.form_new_subtitle),
                         fontSize = 12.sp,
                         color = MutedText
                     )
@@ -583,7 +635,7 @@ private fun FormSheet(
                         )
                         Spacer(Modifier.height(6.dp))
                         Text(
-                            "Vista previa",
+                            stringResource(Res.string.form_preview),
                             fontSize = 11.sp,
                             color = MutedText,
                             fontWeight = FontWeight.ExtraBold
@@ -594,24 +646,24 @@ private fun FormSheet(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         FormField(
-                            label = "Etiqueta",
+                            label = stringResource(Res.string.form_label),
                             value = label,
                             onChange = { label = it },
-                            placeholder = "ej. Mamá",
-                            helper = "Texto visible en la tarjeta"
+                            placeholder = stringResource(Res.string.form_label_placeholder),
+                            helper = stringResource(Res.string.form_label_helper)
                         )
                         FormField(
-                            label = "Texto a hablar",
+                            label = stringResource(Res.string.form_speech),
                             value = speech,
                             onChange = { speech = it },
-                            placeholder = "ej. Mamá",
-                            helper = "Lo que el dispositivo dice"
+                            placeholder = stringResource(Res.string.form_speech_placeholder),
+                            helper = stringResource(Res.string.form_speech_helper)
                         )
                     }
                 }
 
                 // Fitz selector
-                FormSectionLabel("Categoría Fitzgerald Key")
+                FormSectionLabel(stringResource(Res.string.form_section_category))
                 FlowRowSpaced {
                     FitzgeraldKey.entries.forEach { k ->
                         val p = fitzgeraldOf(k)
@@ -626,7 +678,7 @@ private fun FormSheet(
                 }
 
                 // Icon selector
-                FormSectionLabel("Icono del pictograma")
+                FormSectionLabel(stringResource(Res.string.form_section_icon))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(PictogramIcons.keys(), key = { it }) { key ->
                         val active = imagePath == key
@@ -654,9 +706,10 @@ private fun FormSheet(
                 }
 
                 // Photo area
-                FormSectionLabel("O usar foto real")
+                FormSectionLabel(stringResource(Res.string.form_section_photo))
                 val launchGallery = rememberImagePicker { newPath -> pendingCropPath = newPath }
                 val launchFiles = rememberFilePicker { newPath -> pendingCropPath = newPath }
+                val launchCamera = rememberCameraCapture { newPath -> pendingCropPath = newPath }
                 val isPhoto = !imagePath.startsWith("ic_")
                 Column(
                     modifier = Modifier
@@ -691,13 +744,13 @@ private fun FormSheet(
                             }
                             Column {
                                 Text(
-                                    "Foto seleccionada",
+                                    stringResource(Res.string.form_photo_selected),
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Text(
-                                    "Toca para cambiar",
+                                    stringResource(Res.string.form_photo_hint_change),
                                     fontSize = 11.sp,
                                     color = MutedText
                                 )
@@ -713,28 +766,35 @@ private fun FormSheet(
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Galería · Archivos",
+                            if (launchCamera != null) stringResource(Res.string.form_photo_hint_sources_full) else stringResource(Res.string.form_photo_hint_sources_short),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFBBBBBB)
                         )
                         Text(
-                            "JPG, PNG, HEIC",
+                            stringResource(Res.string.form_photo_hint_formats),
                             fontSize = 11.sp,
                             color = Color(0xFFCCCCCC)
                         )
                         Spacer(Modifier.height(10.dp))
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (launchCamera != null) {
+                            OutlinedButton(onClick = { launchCamera() }) {
+                                Icon(Icons.Rounded.PhotoCamera, null, modifier = Modifier.size(16.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(stringResource(Res.string.form_picker_camera), fontSize = 13.sp)
+                            }
+                        }
                         OutlinedButton(onClick = { launchGallery() }) {
                             Icon(Icons.Rounded.PhotoLibrary, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Galería", fontSize = 13.sp)
+                            Text(stringResource(Res.string.form_picker_gallery), fontSize = 13.sp)
                         }
                         OutlinedButton(onClick = { launchFiles() }) {
                             Icon(Icons.Rounded.FolderOpen, null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Archivos", fontSize = 13.sp)
+                            Text(stringResource(Res.string.form_picker_files), fontSize = 13.sp)
                         }
                     }
                 }
@@ -749,7 +809,7 @@ private fun FormSheet(
                     .padding(20.dp)
             ) {
                 GradientButton(
-                    text = if (isEdit) "Guardar cambios" else "Añadir pictograma",
+                    text = if (isEdit) stringResource(Res.string.form_save_edit) else stringResource(Res.string.form_save_new),
                     leadingIcon = if (isEdit) Icons.Rounded.Check else Icons.Rounded.Add,
                     enabled = canSave,
                     fullWidth = true,
@@ -845,13 +905,13 @@ private fun DeleteDialog(
                 }
                 Column {
                     Text(
-                        "¿Eliminar pictograma?",
+                        stringResource(Res.string.delete_title),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Black,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        "Esta acción no se puede deshacer",
+                        stringResource(Res.string.delete_subtitle),
                         fontSize = 12.sp,
                         color = MutedText
                     )
@@ -889,7 +949,7 @@ private fun DeleteDialog(
         },
         confirmButton = {
             GradientButton(
-                text = "Eliminar",
+                text = stringResource(Res.string.action_delete),
                 isDanger = true,
                 onClick = onConfirm
             )
@@ -901,7 +961,7 @@ private fun DeleteDialog(
                     .clip(RoundedCornerShape(12.dp))
                     .background(MutedSurface)
             ) {
-                Text("Cancelar", color = MutedText, fontWeight = FontWeight.ExtraBold)
+                Text(stringResource(Res.string.action_cancel), color = MutedText, fontWeight = FontWeight.ExtraBold)
             }
         }
     )

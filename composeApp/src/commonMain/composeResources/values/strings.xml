@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Common actions -->
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_save">Guardar cambios</string>
+    <string name="action_add">Añadir</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_back">Volver</string>
+    <string name="action_settings">Ajustes</string>
+    <string name="action_search">Buscar…</string>
+    <string name="action_enter">Entrar</string>
+
+    <!-- Categories -->
+    <string name="category_all">Todos</string>
+
+    <!-- Grid screen -->
+    <string name="grid_settings_cd">Configuración</string>
+    <string name="grid_speaking">Hablando…</string>
+
+    <!-- Sentence bar -->
+    <string name="sentence_placeholder">Toca un pictograma para empezar</string>
+    <string name="sentence_remove_last_cd">Borrar último</string>
+    <string name="sentence_clear_cd">Limpiar</string>
+    <string name="sentence_speak_cd">Hablar</string>
+
+    <!-- Edit screen -->
+    <string name="edit_title">Pictogramas</string>
+    <string name="edit_subtitle">Modo padres · %1$d pictogramas</string>
+    <string name="edit_add_button">Añadir</string>
+    <string name="edit_empty_title">Sin pictogramas</string>
+    <string name="edit_no_match_title">Nada coincide</string>
+    <string name="edit_empty_subtitle">Añade el primero para empezar</string>
+    <string name="edit_no_match_subtitle">Prueba con otra búsqueda o filtro</string>
+    <string name="edit_empty_add">Añadir pictograma</string>
+    <string name="edit_toast_added">Pictograma añadido</string>
+    <string name="edit_toast_updated">Pictograma actualizado</string>
+    <string name="edit_toast_deleted">"%1$s" eliminado</string>
+    <string name="edit_parent_badge">Padres</string>
+
+    <!-- Form sheet -->
+    <string name="form_new_title">Nuevo pictograma</string>
+    <string name="form_edit_title">Editar pictograma</string>
+    <string name="form_new_subtitle">Añadir al tablero</string>
+    <string name="form_edit_subtitle">Editando: %1$s</string>
+    <string name="form_preview">Vista previa</string>
+    <string name="form_label">Etiqueta</string>
+    <string name="form_label_helper">Texto visible en la tarjeta</string>
+    <string name="form_label_placeholder">ej. Mamá</string>
+    <string name="form_speech">Texto a hablar</string>
+    <string name="form_speech_helper">Lo que el dispositivo dice</string>
+    <string name="form_speech_placeholder">ej. Mamá</string>
+    <string name="form_section_category">Categoría Fitzgerald Key</string>
+    <string name="form_section_icon">Icono del pictograma</string>
+    <string name="form_section_photo">O usar foto real</string>
+    <string name="form_photo_selected">Foto seleccionada</string>
+    <string name="form_photo_hint_change">Toca para cambiar</string>
+    <string name="form_photo_hint_sources_full">Cámara · Galería · Archivos</string>
+    <string name="form_photo_hint_sources_short">Galería · Archivos</string>
+    <string name="form_photo_hint_formats">JPG, PNG, HEIC</string>
+    <string name="form_picker_camera">Cámara</string>
+    <string name="form_picker_gallery">Galería</string>
+    <string name="form_picker_files">Archivos</string>
+    <string name="form_save_new">Añadir pictograma</string>
+    <string name="form_save_edit">Guardar cambios</string>
+
+    <!-- Live preview -->
+    <string name="preview_label_placeholder">ETIQUETA</string>
+
+    <!-- Delete dialog -->
+    <string name="delete_title">¿Eliminar pictograma?</string>
+    <string name="delete_subtitle">Esta acción no se puede deshacer</string>
+
+    <!-- Crop dialog -->
+    <string name="crop_title">Recortar imagen</string>
+    <string name="crop_hint">Arrastra y pellizca para encuadrar</string>
+    <string name="crop_action">Recortar</string>
+
+    <!-- Parental gate -->
+    <string name="gate_title">Modo padres</string>
+    <string name="gate_challenge">Resuelve: %1$d × %2$d</string>
+    <string name="gate_answer">Respuesta</string>
+    <string name="gate_wait">Espera %1$d s</string>
+    <string name="gate_wrong">Incorrecto (intento %1$d/%2$d)</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Ajustes</string>
+    <string name="settings_debounce">Tiempo entre toques</string>
+    <string name="settings_debounce_helper">Evita pulsaciones repetidas accidentales. Más tiempo = más protección, menos respuesta.</string>
+</resources>

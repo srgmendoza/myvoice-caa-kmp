@@ -11,7 +11,8 @@ data class GridState(
     val selectedCategoryId: Long? = null,
     val sentence: List<Pictogram> = emptyList(),
     val isLoading: Boolean = true,
-    val debounceMs: Long = 350L
+    val debounceMs: Long = 350L,
+    val isSpeaking: Boolean = false
 )
 
 sealed interface GridIntent {

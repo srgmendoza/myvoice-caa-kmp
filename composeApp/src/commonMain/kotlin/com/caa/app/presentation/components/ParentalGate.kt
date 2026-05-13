@@ -7,7 +7,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import caa_kmp.composeapp.generated.resources.Res
+import caa_kmp.composeapp.generated.resources.action_cancel
+import caa_kmp.composeapp.generated.resources.action_enter
+import caa_kmp.composeapp.generated.resources.gate_answer
+import caa_kmp.composeapp.generated.resources.gate_challenge
+import caa_kmp.composeapp.generated.resources.gate_title
+import caa_kmp.composeapp.generated.resources.gate_wait
+import caa_kmp.composeapp.generated.resources.gate_wrong
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
 import kotlin.random.Random
 
 private const val MAX_ATTEMPTS = 3
@@ -37,15 +46,15 @@ fun ParentalGateDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Modo padres") },
+        title = { Text(stringResource(Res.string.gate_title)) },
         text = {
             Column {
-                Text("Resuelve: ${challenge.a} × ${challenge.b}")
+                Text(stringResource(Res.string.gate_challenge, challenge.a, challenge.b))
                 Spacer(Modifier.height(12.dp))
                 OutlinedTextField(
                     value = input,
                     onValueChange = { input = it.filter(Char::isDigit); error = false },
-                    label = { Text("Respuesta") },
+                    label = { Text(stringResource(Res.string.gate_answer)) },
                     isError = error,
                     enabled = !locked,
                     singleLine = true,
@@ -54,12 +63,15 @@ fun ParentalGateDialog(
                 if (locked) {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Espera $secondsLeft s",
+                        stringResource(Res.string.gate_wait, secondsLeft),
                         color = MaterialTheme.colorScheme.error
                     )
                 } else if (error) {
                     Spacer(Modifier.height(4.dp))
-                    Text("Incorrecto (intento $attempts/$MAX_ATTEMPTS)", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        stringResource(Res.string.gate_wrong, attempts, MAX_ATTEMPTS),
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         },
@@ -81,10 +93,10 @@ fun ParentalGateDialog(
                     }
                 },
                 enabled = !locked
-            ) { Text("Entrar") }
+            ) { Text(stringResource(Res.string.action_enter)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Cancelar") }
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.action_cancel)) }
         }
     )
 }
