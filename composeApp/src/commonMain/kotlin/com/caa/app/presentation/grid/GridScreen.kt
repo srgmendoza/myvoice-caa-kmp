@@ -7,7 +7,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -19,15 +18,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ArrowRight
 import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.ArrowLeft
-import androidx.compose.material.icons.rounded.ArrowRight
-import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Mic
-import androidx.compose.material.icons.rounded.Reorder
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -42,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import caa_kmp.composeapp.generated.resources.Res
 import caa_kmp.composeapp.generated.resources.action_back
-import caa_kmp.composeapp.generated.resources.action_delete
 import caa_kmp.composeapp.generated.resources.action_settings
 import caa_kmp.composeapp.generated.resources.category_all
 import caa_kmp.composeapp.generated.resources.edit_parent_badge
@@ -54,6 +48,7 @@ import com.caa.app.domain.model.Pictogram
 import com.caa.app.presentation.components.CategoryFilterChip
 import com.caa.app.presentation.components.ParentalGateDialog
 import com.caa.app.presentation.components.PictogramCell
+import com.caa.app.presentation.components.RightPanel
 import com.caa.app.presentation.components.SentenceBar
 import com.caa.app.presentation.components.rememberDebounce
 import com.caa.app.presentation.theme.CaaSpacing
@@ -79,6 +74,10 @@ fun GridScreen(component: GridComponent) {
     val debounce = rememberDebounce(state.debounceMs)
     var showGate by remember { mutableStateOf(false) }
 
+    // Right panel state
+    var panelPict by remember { mutableStateOf<Pictogram?>(null) }
+    val panelVisible = panelPict !== null || false
+
     if (showGate) {
         ParentalGateDialog(
             onPass = { showGate = false; component.onParentalGate() },
@@ -88,123 +87,146 @@ fun GridScreen(component: GridComponent) {
 
     val categoriesById = remember(state.categories) { state.categories.associateBy { it.id } }
 
-    // ── Parent mode: form sheet state ──
-    var editingPict by remember { mutableStateOf<Pictogram?>(null) }
-    var showAddForm by remember { mutableStateOf(false) }
-
-    Scaffold(
-        topBar = {
-            if (state.isParentMode) {
-                ParentToolbar(
-                    folderStack = state.folderStack,
-                    folderPath = state.folderPath,
-                    onBack = { component.onIntent(GridIntent.NavigateBack) },
-                    onHome = { component.onIntent(GridIntent.NavigateHome) },
-                    onAdd = { showAddForm = true },
-                    onSettings = { component.onIntent(GridIntent.ToggleParentMode) },
-                    isRoot = state.folderStack.size <= 1
-                )
-            } else {
-                Column {
-                    SentenceBar(
-                        sentence = state.sentence,
-                        categoriesById = categoriesById,
-                        onSpeak = { debounce.fire { component.onIntent(GridIntent.SpeakSentence) } },
-                        onClear = { debounce.fire { component.onIntent(GridIntent.ClearSentence) } },
-                        onRemoveLast = { debounce.fire { component.onIntent(GridIntent.RemoveLastFromSentence) } }
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            topBar = {
+                if (state.isParentMode) {
+                    val isRoot = state.folderStack.size <= 1
+                    ParentToolbar(
+                        folderStack = state.folderStack,
+                        folderPath = state.folderPath,
+                        onBack = {
+                            if (isRoot) component.onIntent(GridIntent.ToggleParentMode)
+                            else component.onIntent(GridIntent.NavigateBack)
+                        },
+                        onHome = { component.onIntent(GridIntent.NavigateHome) },
+                        onAdd = { panelPict = null },
+                        onSettings = { component.onIntent(GridIntent.OpenSettings) },
+                        isRoot = isRoot
                     )
-                }
-            }
-        },
-        floatingActionButton = {
-            if (!state.isParentMode) {
-                FloatingActionButton(onClick = { showGate = true }) {
-                    Icon(Icons.Rounded.Settings, contentDescription = stringResource(Res.string.grid_settings_cd))
-                }
-            }
-        }
-    ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
-            Column(Modifier.fillMaxSize()) {
-                // Category filter (both modes)
-                if (state.categories.isNotEmpty()) {
-                    LazyRow(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = CaaSpacing.sp12, vertical = CaaSpacing.sp8),
-                        horizontalArrangement = Arrangement.spacedBy(CaaSpacing.sp8)
-                    ) {
-                        item {
-                            CategoryFilterChip(
-                                label = stringResource(Res.string.category_all),
-                                selected = state.selectedCategoryId == null,
-                                accent = MaterialTheme.colorScheme.primary,
-                                onAccent = MaterialTheme.colorScheme.onPrimary,
-                                onClick = { component.onIntent(GridIntent.SelectCategory(null)) }
-                            )
-                        }
-                        items(state.categories, key = { it.id }) { c ->
-                            val palette = fitzgeraldOf(c.key)
-                            CategoryFilterChip(
-                                label = c.name,
-                                selected = state.selectedCategoryId == c.id,
-                                accent = palette.bg,
-                                onAccent = palette.fg,
-                                onClick = { component.onIntent(GridIntent.SelectCategory(c.id)) }
-                            )
-                        }
-                    }
-                }
-
-                // Grid
-                if (state.isLoading) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
                 } else {
-                    LazyVerticalGrid(
-                        columns = GridCells.Adaptive(minSize = 140.dp),
-                        modifier = Modifier.fillMaxSize().padding(CaaSpacing.sp8),
-                        contentPadding = PaddingValues(CaaSpacing.sp4)
-                    ) {
-                        items(state.pictograms, key = { it.id }) { pict ->
-                            val palette: FitzgeraldPalette? = pict.fitzKey.let { fitzgeraldOf(FitzgeraldKey.fromStorage(it)) }
-
-                            if (state.isParentMode) {
-                                ParentPictCard(
-                                    pict = pict,
-                                    palette = palette,
-                                    onTap = {
-                                        if (pict.isFolder) {
-                                            component.onIntent(GridIntent.NavigateToFolder(pict.id))
-                                        } else {
-                                            component.onIntent(GridIntent.TapPictogram(pict))
-                                        }
-                                    },
-                                    onEdit = { editingPict = pict },
-                                    onDelete = { component.onIntent(GridIntent.DeletePictogram(pict.id)) }
+                    Column {
+                        SentenceBar(
+                            sentence = state.sentence,
+                            categoriesById = categoriesById,
+                            onSpeak = { debounce.fire { component.onIntent(GridIntent.SpeakSentence) } },
+                            onClear = { debounce.fire { component.onIntent(GridIntent.ClearSentence) } },
+                            onRemoveLast = { debounce.fire { component.onIntent(GridIntent.RemoveLastFromSentence) } }
+                        )
+                    }
+                }
+            },
+            floatingActionButton = {
+                if (!state.isParentMode) {
+                    FloatingActionButton(onClick = { showGate = true }) {
+                        Icon(Icons.Rounded.Settings, contentDescription = stringResource(Res.string.grid_settings_cd))
+                    }
+                }
+            }
+        ) { padding ->
+            Box(Modifier.fillMaxSize().padding(padding)) {
+                Column(Modifier.fillMaxSize()) {
+                    // Category filter
+                    if (state.categories.isNotEmpty()) {
+                        LazyRow(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = CaaSpacing.sp12, vertical = CaaSpacing.sp8),
+                            horizontalArrangement = Arrangement.spacedBy(CaaSpacing.sp8)
+                        ) {
+                            item {
+                                CategoryFilterChip(
+                                    label = stringResource(Res.string.category_all),
+                                    selected = state.selectedCategoryId == null,
+                                    accent = MaterialTheme.colorScheme.primary,
+                                    onAccent = MaterialTheme.colorScheme.onPrimary,
+                                    onClick = { component.onIntent(GridIntent.SelectCategory(null)) }
                                 )
-                            } else {
-                                PictogramCell(
-                                    pictogram = pict,
-                                    category = pict.categoryId?.let { categoriesById[it] },
-                                    onClick = { debounce.fire { component.onIntent(GridIntent.TapPictogram(pict)) } }
+                            }
+                            items(state.categories, key = { it.id }) { c ->
+                                val palette = fitzgeraldOf(c.key)
+                                CategoryFilterChip(
+                                    label = c.name,
+                                    selected = state.selectedCategoryId == c.id,
+                                    accent = palette.bg,
+                                    onAccent = palette.fg,
+                                    onClick = { component.onIntent(GridIntent.SelectCategory(c.id)) }
                                 )
                             }
                         }
                     }
+
+                    if (state.isLoading) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Adaptive(minSize = 140.dp),
+                            modifier = Modifier.fillMaxSize().padding(CaaSpacing.sp8),
+                            contentPadding = PaddingValues(CaaSpacing.sp4)
+                        ) {
+                            items(state.pictograms, key = { it.id }) { pict ->
+                                val palette: FitzgeraldPalette? = pict.fitzKey.let { fitzgeraldOf(FitzgeraldKey.fromStorage(it)) }
+
+                                if (state.isParentMode) {
+                                    ParentPictCard(
+                                        pict = pict,
+                                        palette = palette,
+                                        onTap = {
+                                            if (pict.isFolder) {
+                                                component.onIntent(GridIntent.NavigateToFolder(pict.id))
+                                            } else {
+                                                component.onIntent(GridIntent.TapPictogram(pict))
+                                            }
+                                        },
+                                        onEdit = { panelPict = pict },
+                                        onDelete = { component.onIntent(GridIntent.DeletePictogram(pict.id)) }
+                                    )
+                                } else {
+                                    PictogramCell(
+                                        pictogram = pict,
+                                        category = pict.categoryId?.let { categoriesById[it] },
+                                        onClick = { debounce.fire { component.onIntent(GridIntent.TapPictogram(pict)) } }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (!state.isParentMode) {
+                    SpeakingOverlay(visible = state.isSpeaking)
                 }
             }
+        }
 
-            // Speaking overlay (child mode only)
-            if (!state.isParentMode) {
-                SpeakingOverlay(visible = state.isSpeaking)
+        // Right panel overlay
+        if (panelVisible) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)).clickable { panelPict = null },
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                RightPanel(
+                    visible = true,
+                    editPict = panelPict,
+                    categories = state.categories,
+                    onSave = { form ->
+                        component.onIntent(GridIntent.SavePictogram(form, editId = panelPict?.id))
+                        panelPict = null
+                    },
+                    onDelete = { id ->
+                        component.onIntent(GridIntent.DeletePictogram(id))
+                        panelPict = null
+                    },
+                    onDismiss = { panelPict = null }
+                )
             }
         }
     }
 }
 
-// ─── Parent mode toolbar ──────────────────────────────────────────────────
+// ─── Parent toolbar ─────────────────────────────────────────────────────────
 @Composable
 private fun ParentToolbar(
     folderStack: List<Long?>,
@@ -227,10 +249,10 @@ private fun ParentToolbar(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 if (!isRoot) {
-                    SquareIcon(onClick = onHome, content = { Icon(Icons.Rounded.Home, null, tint = Color(0xFF999999)) })
+                    SquareIcon(onClick = onHome) { Icon(Icons.Rounded.Home, null, tint = Color(0xFF999999)) }
                 }
-                IconButton(onClick = onBack, enabled = !isRoot) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(Res.string.action_back), tint = if (isRoot) Color(0xFFCCCCCC) else Color(0xFF999999))
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, stringResource(Res.string.action_back), tint = Color(0xFF999999))
                 }
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -250,12 +272,8 @@ private fun ParentToolbar(
                     }
                 }
                 ParentBadge()
-                IconButton(onClick = onAdd) {
-                    Icon(Icons.Rounded.Add, "Añadir", tint = Accent)
-                }
-                IconButton(onClick = onSettings) {
-                    Icon(Icons.Rounded.Settings, stringResource(Res.string.action_settings), tint = Color(0xFF999999))
-                }
+                SquareIcon(onClick = onAdd) { Icon(Icons.Rounded.Add, "Añadir", tint = Accent) }
+                SquareIcon(onClick = onSettings) { Icon(Icons.Rounded.Settings, null, tint = Color(0xFF999999)) }
             }
             HorizontalDivider(color = SubtleBorder)
         }
@@ -280,8 +298,7 @@ private fun ParentBadge() {
     }
 }
 
-// ─── Parent mode card: bar TOP + folder indicator + edit/delete ──────────
-@OptIn(ExperimentalFoundationApi::class)
+// ─── Parent mode card ───────────────────────────────────────────────────────
 @Composable
 private fun ParentPictCard(
     pict: Pictogram,
@@ -312,19 +329,22 @@ private fun ParentPictCard(
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                         .background(accent)
                 )
-                // Image area
                 Box(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    com.caa.app.presentation.components.PictogramImage(
-                        path = pict.imagePath,
-                        contentDescription = pict.label,
-                        modifier = Modifier.fillMaxSize(0.7f).padding(6.dp),
-                        tint = onSurface
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxWidth(0.72f).aspectRatio(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        com.caa.app.presentation.components.PictogramImage(
+                            path = pict.imagePath,
+                            contentDescription = pict.label,
+                            modifier = Modifier.fillMaxSize(),
+                            tint = if (pict.imagePath.startsWith("ic_")) onSurface else Color.Unspecified
+                        )
+                    }
                 }
-                // Label
                 Text(
                     text = pict.label,
                     style = MaterialTheme.typography.titleMedium,
@@ -338,7 +358,6 @@ private fun ParentPictCard(
                 Spacer(Modifier.height(2.dp))
             }
 
-            // Folder indicator (chevron top-right)
             if (pict.isFolder) {
                 Box(
                     modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
@@ -347,38 +366,23 @@ private fun ParentPictCard(
                         .background(accent),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.ArrowRight,
-                        null,
-                        tint = (palette?.fg ?: Color.White),
-                        modifier = Modifier.size(14.dp)
-                    )
+                    Icon(Icons.AutoMirrored.Rounded.ArrowRight, null, tint = (palette?.fg ?: Color.White), modifier = Modifier.size(14.dp))
                 }
             }
 
-            // Edit button (bottom-left)
-            IconButton(
-                onClick = onEdit,
-                modifier = Modifier.align(Alignment.BottomStart).size(32.dp)
-            ) {
+            IconButton(onClick = onEdit, modifier = Modifier.align(Alignment.BottomStart).size(32.dp)) {
                 Icon(Icons.Rounded.Edit, "Editar", tint = Color(0xFF666666), modifier = Modifier.size(16.dp))
             }
-            // Delete button (bottom-right)
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.align(Alignment.BottomEnd).size(32.dp)
-            ) {
+            IconButton(onClick = onDelete, modifier = Modifier.align(Alignment.BottomEnd).size(32.dp)) {
                 Icon(Icons.Rounded.Delete, "Eliminar", tint = DangerColor, modifier = Modifier.size(16.dp))
             }
         }
     }
 }
 
+// ─── Shared ──────────────────────────────────────────────────────────────────
 @Composable
-private fun SquareIcon(
-    onClick: () -> Unit,
-    content: @Composable () -> Unit
-) {
+private fun SquareIcon(onClick: () -> Unit, content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .size(40.dp)
@@ -398,28 +402,17 @@ private fun SpeakingOverlay(visible: Boolean) {
         exit = fadeOut()
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(accent.copy(alpha = 0.12f)),
+            modifier = Modifier.fillMaxSize().background(accent.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = accent,
-                shadowElevation = 12.dp
-            ) {
+            Surface(shape = RoundedCornerShape(28.dp), color = accent, shadowElevation = 12.dp) {
                 Row(
                     modifier = Modifier.padding(horizontal = 40.dp, vertical = 20.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(Icons.Rounded.Mic, contentDescription = null, tint = Color.White, modifier = Modifier.size(32.dp))
-                    Text(
-                        text = stringResource(Res.string.grid_speaking),
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Black
-                    )
+                    Icon(Icons.Rounded.Mic, null, tint = Color.White, modifier = Modifier.size(32.dp))
+                    Text(stringResource(Res.string.grid_speaking), color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black)
                 }
             }
         }

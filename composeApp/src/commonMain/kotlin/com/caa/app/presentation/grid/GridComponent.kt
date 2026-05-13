@@ -5,12 +5,17 @@ import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
 import com.arkivanov.decompose.value.update
 import com.arkivanov.essenty.lifecycle.coroutines.coroutineScope
+import com.caa.app.domain.model.FitzgeraldKey
 import com.caa.app.domain.model.Pictogram
 import com.caa.app.domain.repository.PictogramRepository
 import com.caa.app.domain.repository.SettingsRepository
 import com.caa.app.platform.tts.SpeechEngine
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
 interface GridComponent {
@@ -19,6 +24,7 @@ interface GridComponent {
     fun onParentalGate()
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DefaultGridComponent(
     componentContext: ComponentContext,
     private val repository: PictogramRepository,
@@ -26,6 +32,7 @@ class DefaultGridComponent(
     private val speech: SpeechEngine,
     private val onOpenSettings: () -> Unit,
     private val onOpenParentMode: (() -> Unit)? = null,
+    private val onExitParentMode: (() -> Unit)? = null,
     private val isParentMode: Boolean = false
 ) : GridComponent, ComponentContext by componentContext {
 
@@ -34,22 +41,23 @@ class DefaultGridComponent(
     override val state: Value<GridState> = _state
 
     private val selectedCategory = MutableStateFlow<Long?>(null)
+    private val folderVersion = MutableStateFlow(0)
     private var sentenceSpeakActive = false
 
     init {
         scope.launch { repository.seedDefaults() }
 
         scope.launch {
-            selectedCategory.collect { catId ->
-                val folderId = _state.value.currentFolderId
-                val childFlow = when {
+            combine(selectedCategory, folderVersion) { catId, _ ->
+                catId to _state.value.currentFolderId
+            }.flatMapLatest { (catId, folderId) ->
+                when {
                     catId != null && folderId != null -> repository.observeChildrenByCategory(folderId, catId)
                     catId != null -> repository.observeByCategory(catId)
                     else -> repository.observeChildren(folderId)
                 }
-                childFlow.collect { pictos ->
-                    _state.update { it.copy(pictograms = pictos) }
-                }
+            }.collectLatest { pictos ->
+                _state.update { it.copy(pictograms = pictos) }
             }
         }
 
@@ -109,19 +117,46 @@ class DefaultGridComponent(
                         val newPath = it.folderPath.dropLast(1)
                         it.copy(folderStack = newStack, folderPath = newPath)
                     }
+                    folderVersion.value++
                 }
             }
             GridIntent.NavigateHome -> {
                 _state.update { it.copy(folderStack = listOf(null), folderPath = emptyList()) }
+                folderVersion.value++
+            }
+            GridIntent.OpenSettings -> {
+                onOpenSettings()
             }
             GridIntent.ToggleParentMode -> {
-                // Toggled by the screen, not here
+                onExitParentMode?.invoke()
             }
             is GridIntent.EditPictogram -> {
-                // Handled by the screen — will open form sheet
+                // Handled by the screen
             }
             GridIntent.AddPictogram -> {
                 // Handled by the screen
+            }
+            is GridIntent.SavePictogram -> {
+                scope.launch {
+                    val folderId = _state.value.currentFolderId
+                    val form = intent.form
+                    val pict = Pictogram(
+                        id = intent.editId ?: 0,
+                        label = form.label,
+                        speech = form.speech,
+                        parentId = if (intent.editId != null) {
+                            _state.value.pictograms.firstOrNull { it.id == intent.editId }?.parentId
+                        } else folderId,
+                        isFolder = form.isFolder,
+                        imageSource = form.imageSource,
+                        arasaacId = form.arasaacId,
+                        customImage = form.customImage,
+                        fitzKey = form.fitzKey.storage,
+                        sortOrder = _state.value.pictograms.size
+                    )
+                    if (intent.editId != null) repository.update(pict)
+                    else repository.add(pict)
+                }
             }
             is GridIntent.DeletePictogram -> {
                 scope.launch { repository.delete(intent.id) }
@@ -138,6 +173,7 @@ class DefaultGridComponent(
             )
         }
         selectedCategory.value = null
+        folderVersion.value++
     }
 
     override fun onParentalGate() { onOpenParentMode?.invoke() }
