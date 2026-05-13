@@ -66,6 +66,7 @@ class DefaultRootComponent(
                 DefaultGridComponent(
                     ctx, repository, settings, speech,
                     onOpenSettings = { nav.push(Config.Settings) },
+                    onExitParentMode = { nav.pop() },
                     isParentMode = true
                 )
             )

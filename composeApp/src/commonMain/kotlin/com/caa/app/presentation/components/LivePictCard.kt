@@ -64,7 +64,7 @@ fun LivePictCard(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 4.dp),
-                        tint = accent
+                        tint = if (imagePath.startsWith("ic_")) accent else Color.Unspecified
                     )
                 }
             }

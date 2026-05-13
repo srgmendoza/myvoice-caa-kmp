@@ -2,7 +2,18 @@ package com.caa.app.presentation.grid
 
 import androidx.compose.runtime.Immutable
 import com.caa.app.domain.model.Category
+import com.caa.app.domain.model.FitzgeraldKey
 import com.caa.app.domain.model.Pictogram
+
+data class PictogramFormData(
+    val label: String = "",
+    val speech: String = "",
+    val fitzKey: FitzgeraldKey = FitzgeraldKey.Verbs,
+    val isFolder: Boolean = false,
+    val imageSource: String = "arasaac",
+    val arasaacId: Int? = null,
+    val customImage: String? = null
+)
 
 @Immutable
 data class GridState(
@@ -29,8 +40,10 @@ sealed interface GridIntent {
     data class NavigateToFolder(val folderId: Long) : GridIntent
     data object NavigateBack : GridIntent
     data object NavigateHome : GridIntent
+    data object OpenSettings : GridIntent
     data object ToggleParentMode : GridIntent
     data class EditPictogram(val pictogram: Pictogram) : GridIntent
     data object AddPictogram : GridIntent
+    data class SavePictogram(val form: PictogramFormData, val editId: Long? = null) : GridIntent
     data class DeletePictogram(val id: Long) : GridIntent
 }

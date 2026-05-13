@@ -75,27 +75,34 @@ fun PictogramCell(
                         .clip(RoundedCornerShape(topStart = CaaRadius.lg, topEnd = CaaRadius.lg))
                         .background(accent)
                 )
-                // Image area
+                // Image area — square, matching card width
                 Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth(),
+                        .fillMaxWidth()
+                        .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (isPhotoPath(pictogram.imagePath)) {
-                        PhotoTile(
-                            path = pictogram.imagePath,
-                            label = pictogram.label,
-                            accent = accent,
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        PictogramImage(
-                            path = pictogram.imagePath,
-                            contentDescription = pictogram.label,
-                            modifier = Modifier.fillMaxSize(0.7f).padding(CaaSpacing.sp10),
-                            tint = onSurface
-                        )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.72f)
+                            .aspectRatio(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isPhotoPath(pictogram.imagePath)) {
+                            PhotoTile(
+                                path = pictogram.imagePath,
+                                label = pictogram.label,
+                                accent = accent,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            PictogramImage(
+                                path = pictogram.imagePath,
+                                contentDescription = pictogram.label,
+                                modifier = Modifier.fillMaxSize(),
+                                tint = if (pictogram.imagePath.startsWith("ic_")) onSurface else Color.Unspecified
+                            )
+                        }
                     }
                 }
                 // Label
