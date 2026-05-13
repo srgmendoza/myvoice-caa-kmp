@@ -51,12 +51,15 @@ class DefaultEditComponent(
 
     override fun onAdd(label: String, speech: String, imagePath: String, categoryId: Long?) {
         scope.launch {
+            val isLegacyIcon = imagePath.startsWith("ic_")
             repository.add(
                 Pictogram(
                     id = 0,
                     label = label,
                     speech = speech,
-                    imagePath = imagePath,
+                    imageSource = if (isLegacyIcon) "icon" else "photo",
+                    iconKey = if (isLegacyIcon) imagePath else null,
+                    customImage = if (isLegacyIcon) null else imagePath,
                     categoryId = categoryId,
                     colorHex = null,
                     sortOrder = _state.value.pictograms.size
@@ -68,11 +71,14 @@ class DefaultEditComponent(
     override fun onUpdate(id: Long, label: String, speech: String, imagePath: String, categoryId: Long?) {
         scope.launch {
             val existing = _state.value.pictograms.firstOrNull { it.id == id } ?: return@launch
+            val isLegacyIcon = imagePath.startsWith("ic_")
             repository.update(
                 existing.copy(
                     label = label,
                     speech = speech,
-                    imagePath = imagePath,
+                    imageSource = if (isLegacyIcon) "icon" else "photo",
+                    iconKey = if (isLegacyIcon) imagePath else null,
+                    customImage = if (isLegacyIcon) null else imagePath,
                     categoryId = categoryId
                 )
             )

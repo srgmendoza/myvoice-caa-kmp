@@ -1,0 +1,17 @@
+ALTER TABLE PictogramEntity ADD COLUMN parentId INTEGER;
+ALTER TABLE PictogramEntity ADD COLUMN isFolder INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE PictogramEntity ADD COLUMN imageSource TEXT NOT NULL DEFAULT 'icon';
+ALTER TABLE PictogramEntity ADD COLUMN arasaacId INTEGER;
+ALTER TABLE PictogramEntity ADD COLUMN iconKey TEXT;
+ALTER TABLE PictogramEntity ADD COLUMN customImage TEXT;
+ALTER TABLE PictogramEntity ADD COLUMN fitzKey TEXT NOT NULL DEFAULT 'verbs';
+
+-- Backfill imageSource from existing imagePath
+UPDATE PictogramEntity SET imageSource = 'photo', customImage = imagePath WHERE imagePath LIKE 'file://%';
+UPDATE PictogramEntity SET imageSource = 'icon', iconKey = imagePath WHERE imagePath LIKE 'ic_%';
+
+-- Backfill fitzKey from CategoryEntity
+UPDATE PictogramEntity SET fitzKey = COALESCE(
+  (SELECT fitzgeraldKey FROM CategoryEntity WHERE id = PictogramEntity.categoryId),
+  'verbs'
+);

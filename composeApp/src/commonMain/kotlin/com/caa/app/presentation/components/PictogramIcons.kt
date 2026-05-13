@@ -28,7 +28,14 @@ object PictogramIcons {
         "ic_no" to Icons.Rounded.Close,
         "ic_hello" to Icons.Rounded.WavingHand,
         "ic_bye" to Icons.AutoMirrored.Rounded.ExitToApp,
-        "ic_default" to Icons.Rounded.Image
+        // Fitzgerald Key placeholders — fallback when no ARASAAC or photo
+    "ic_fitz_people" to Icons.Rounded.Person,
+    "ic_fitz_verbs" to Icons.Rounded.PlayArrow,
+    "ic_fitz_nouns" to Icons.Rounded.Category,
+    "ic_fitz_desc" to Icons.Rounded.Palette,
+    "ic_fitz_social" to Icons.Rounded.Forum,
+    "ic_fitz_food" to Icons.Rounded.Restaurant,
+    "ic_default" to Icons.Rounded.Image
     )
 
     fun get(key: String): ImageVector = map[key] ?: Icons.Rounded.Image
