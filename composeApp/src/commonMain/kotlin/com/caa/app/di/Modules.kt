@@ -1,6 +1,10 @@
 package com.caa.app.di
 
 import com.caa.app.data.db.DatabaseDriverFactory
+import com.caa.app.data.remote.ArasaacClient
+import com.caa.app.data.remote.ArasaacFileSystem
+import com.caa.app.data.remote.ArasaacImageDownloader
+import com.caa.app.data.repository.ArasaacRepository
 import com.caa.app.data.repository.PictogramRepositoryImpl
 import com.caa.app.data.repository.SettingsRepositoryImpl
 import com.caa.app.data.settings.SettingsDataSource
@@ -19,6 +23,10 @@ val commonModule: Module = module {
     single<PictogramRepository> { PictogramRepositoryImpl(get()) }
     single<SettingsRepository> { SettingsRepositoryImpl(get<SettingsDataSource>()) }
     single<SpeechEngine> { get<SpeechEngineFactory>().create() }
+
+    single { ArasaacClient() }
+    single { ArasaacImageDownloader(get<ArasaacFileSystem>()) }
+    single { ArasaacRepository(get(), get(), get()) }
 }
 
 expect val platformModule: Module

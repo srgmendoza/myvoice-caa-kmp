@@ -1,6 +1,7 @@
 package com.caa.app.di
 
 import com.caa.app.data.db.DatabaseDriverFactory
+import com.caa.app.data.remote.ArasaacFileSystem
 import com.caa.app.data.settings.AndroidSettingsDataSource
 import com.caa.app.data.settings.SettingsDataSource
 import com.caa.app.platform.tts.SpeechEngineFactory
@@ -12,4 +13,5 @@ actual val platformModule: Module = module {
     single { DatabaseDriverFactory(androidContext()) }
     single { SpeechEngineFactory(androidContext()) }
     single<SettingsDataSource> { AndroidSettingsDataSource(androidContext()) }
+    single { ArasaacFileSystem(androidContext()) }
 }

@@ -49,8 +49,15 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
 
             implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor3)
+
+            implementation(libs.ktor.core)
+            implementation(libs.ktor.content.negotiation)
+            implementation(libs.ktor.serialization.json)
         }
         androidMain.dependencies {
+            implementation(libs.ktor.okhttp)
+
             implementation(compose.preview)
             implementation(compose.uiTooling)
             implementation(libs.androidx.activityCompose)
@@ -64,6 +71,7 @@ kotlin {
         }
         iosMain.dependencies {
             implementation(libs.sqldelight.native)
+            implementation(libs.ktor.darwin)
         }
     }
 }
