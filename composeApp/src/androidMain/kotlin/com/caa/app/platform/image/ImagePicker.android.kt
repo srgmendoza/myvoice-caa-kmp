@@ -1,8 +1,12 @@
 package com.caa.app.platform.image
 
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.MediaStore
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,10 +41,14 @@ actual fun rememberImagePicker(onPicked: (String) -> Unit): () -> Unit {
 @Composable
 actual fun rememberCameraCapture(onPicked: (String) -> Unit): (() -> Unit)? {
     val context = LocalContext.current
-    val hasCamera = remember(context) {
-        context.packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+    val canCapture = remember(context) {
+        val pm = context.packageManager
+        val hasFeature = pm.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY)
+        val probe = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        val resolves = probe.resolveActivity(pm) != null
+        hasFeature && resolves
     }
-    if (!hasCamera) return null
+    if (!canCapture) return null
 
     val pendingHolder = remember { arrayOfNulls<File>(1) }
 
@@ -65,7 +73,13 @@ actual fun rememberCameraCapture(onPicked: (String) -> Unit): (() -> Unit)? {
             "${context.packageName}.fileprovider",
             file
         )
-        launcher.launch(uri)
+        try {
+            launcher.launch(uri)
+        } catch (e: ActivityNotFoundException) {
+            Log.w("ImagePicker", "No camera app available to handle IMAGE_CAPTURE", e)
+            pendingHolder[0] = null
+            file.delete()
+        }
     }
 }
 

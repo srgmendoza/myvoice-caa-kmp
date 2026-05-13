@@ -1,6 +1,7 @@
 package com.caa.app.di
 
 import com.caa.app.data.db.DatabaseDriverFactory
+import com.caa.app.data.remote.ArasaacFileSystem
 import com.caa.app.data.settings.IosSettingsDataSource
 import com.caa.app.data.settings.SettingsDataSource
 import com.caa.app.platform.tts.SpeechEngineFactory
@@ -11,4 +12,5 @@ actual val platformModule: Module = module {
     single { DatabaseDriverFactory() }
     single { SpeechEngineFactory() }
     single<SettingsDataSource> { IosSettingsDataSource() }
+    single { ArasaacFileSystem() }
 }

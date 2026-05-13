@@ -8,3 +8,6 @@ captures/
 xcuserdata/
 *.xcworkspace/xcuserdata/
 Pods/
+DerivedData/
+*.generated.swift
+.kotlin/metadata/
