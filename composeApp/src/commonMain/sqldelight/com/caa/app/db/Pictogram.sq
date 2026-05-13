@@ -5,7 +5,14 @@ CREATE TABLE PictogramEntity (
     imagePath TEXT NOT NULL,
     categoryId INTEGER,
     colorHex TEXT,
-    sortOrder INTEGER NOT NULL DEFAULT 0
+    sortOrder INTEGER NOT NULL DEFAULT 0,
+    parentId INTEGER,
+    isFolder INTEGER NOT NULL DEFAULT 0,
+    imageSource TEXT NOT NULL DEFAULT 'icon',
+    arasaacId INTEGER,
+    iconKey TEXT,
+    customImage TEXT,
+    fitzKey TEXT NOT NULL DEFAULT 'verbs'
 );
 
 CREATE TABLE CategoryEntity (
@@ -22,12 +29,26 @@ SELECT * FROM PictogramEntity ORDER BY sortOrder ASC;
 selectByCategory:
 SELECT * FROM PictogramEntity WHERE categoryId = ? ORDER BY sortOrder ASC;
 
+selectChildren:
+SELECT * FROM PictogramEntity WHERE parentId IS ? ORDER BY sortOrder ASC;
+
+selectChildrenByCategory:
+SELECT * FROM PictogramEntity WHERE parentId IS ? AND categoryId = ? ORDER BY sortOrder ASC;
+
+selectRootChildren:
+SELECT * FROM PictogramEntity WHERE parentId IS NULL ORDER BY sortOrder ASC;
+
+selectPictogramById:
+SELECT * FROM PictogramEntity WHERE id = ?;
+
 selectAllCategories:
 SELECT * FROM CategoryEntity ORDER BY sortOrder ASC;
 
 insertPictogram:
-INSERT INTO PictogramEntity(label, speech, imagePath, categoryId, colorHex, sortOrder)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT INTO PictogramEntity(
+    label, speech, imagePath, categoryId, colorHex, sortOrder,
+    parentId, isFolder, imageSource, arasaacId, iconKey, customImage, fitzKey
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertCategory:
 INSERT INTO CategoryEntity(name, colorHex, sortOrder, fitzgeraldKey) VALUES (?, ?, ?, ?);
@@ -35,6 +56,14 @@ INSERT INTO CategoryEntity(name, colorHex, sortOrder, fitzgeraldKey) VALUES (?, 
 deletePictogram:
 DELETE FROM PictogramEntity WHERE id = ?;
 
+deleteChildren:
+DELETE FROM PictogramEntity WHERE parentId = ?;
+
 updatePictogram:
-UPDATE PictogramEntity SET label = ?, speech = ?, imagePath = ?, categoryId = ?, colorHex = ?, sortOrder = ?
+UPDATE PictogramEntity SET
+    label = ?, speech = ?, imagePath = ?, categoryId = ?, colorHex = ?, sortOrder = ?,
+    parentId = ?, isFolder = ?, imageSource = ?, arasaacId = ?, iconKey = ?, customImage = ?, fitzKey = ?
 WHERE id = ?;
+
+updateSortOrder:
+UPDATE PictogramEntity SET sortOrder = ? WHERE id = ?;
