@@ -28,12 +28,12 @@ class PictogramRepositoryImpl(
         }
 
     override fun observeChildren(parentId: Long?): Flow<List<Pictogram>> =
-        q.selectChildren(parentId).asFlow().mapToList(Dispatchers.Default).map { rows ->
+        q.selectChildren(parentId, parentId).asFlow().mapToList(Dispatchers.Default).map { rows ->
             rows.map { it.toDomain() }
         }
 
     override fun observeChildrenByCategory(parentId: Long?, categoryId: Long): Flow<List<Pictogram>> =
-        q.selectChildrenByCategory(parentId, categoryId).asFlow().mapToList(Dispatchers.Default).map { rows ->
+        q.selectChildrenByCategory(parentId, parentId, categoryId).asFlow().mapToList(Dispatchers.Default).map { rows ->
             rows.map { it.toDomain() }
         }
 
@@ -50,7 +50,7 @@ class PictogramRepositoryImpl(
             }
         }
 
-    override suspend fun add(pictogram: Pictogram) {
+    override suspend fun add(pictogram: Pictogram): Long {
         q.insertPictogram(
             pictogram.label, pictogram.speech, pictogram.imagePath,
             pictogram.categoryId, pictogram.colorHex, pictogram.sortOrder.toLong(),
@@ -58,6 +58,7 @@ class PictogramRepositoryImpl(
             pictogram.imageSource, pictogram.arasaacId?.toLong(),
             pictogram.iconKey, pictogram.customImage, pictogram.fitzKey
         )
+        return q.selectLastInsertId().executeAsOne()
     }
 
     override suspend fun update(pictogram: Pictogram) {
@@ -77,6 +78,12 @@ class PictogramRepositoryImpl(
 
     override suspend fun updateSortOrder(id: Long, sortOrder: Int) {
         q.updateSortOrder(sortOrder.toLong(), id)
+    }
+
+    override suspend fun addReferencesToFolder(folderId: Long, pictogramIds: List<Long>) {
+        q.transaction {
+            pictogramIds.forEach { id -> q.insertFolderLink(id, folderId) }
+        }
     }
 
     override suspend fun addCategory(category: Category) {

@@ -75,8 +75,8 @@ fun GridScreen(component: GridComponent) {
     var showGate by remember { mutableStateOf(false) }
 
     // Right panel state
+    var panelOpen by remember { mutableStateOf(false) }
     var panelPict by remember { mutableStateOf<Pictogram?>(null) }
-    val panelVisible = panelPict !== null || false
 
     if (showGate) {
         ParentalGateDialog(
@@ -100,7 +100,7 @@ fun GridScreen(component: GridComponent) {
                             else component.onIntent(GridIntent.NavigateBack)
                         },
                         onHome = { component.onIntent(GridIntent.NavigateHome) },
-                        onAdd = { panelPict = null },
+                        onAdd = { panelPict = null; panelOpen = true },
                         onSettings = { component.onIntent(GridIntent.OpenSettings) },
                         isRoot = isRoot
                     )
@@ -180,7 +180,7 @@ fun GridScreen(component: GridComponent) {
                                                 component.onIntent(GridIntent.TapPictogram(pict))
                                             }
                                         },
-                                        onEdit = { panelPict = pict },
+                                         onEdit = { panelPict = pict; panelOpen = true },
                                         onDelete = { component.onIntent(GridIntent.DeletePictogram(pict.id)) }
                                     )
                                 } else {
@@ -202,7 +202,7 @@ fun GridScreen(component: GridComponent) {
         }
 
         // Right panel overlay
-        if (panelVisible) {
+        if (panelOpen) {
             Box(
                 modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)).clickable { panelPict = null },
                 contentAlignment = Alignment.CenterEnd
@@ -211,15 +211,26 @@ fun GridScreen(component: GridComponent) {
                     visible = true,
                     editPict = panelPict,
                     categories = state.categories,
-                    onSave = { form ->
-                        component.onIntent(GridIntent.SavePictogram(form, editId = panelPict?.id))
-                        panelPict = null
-                    },
-                    onDelete = { id ->
-                        component.onIntent(GridIntent.DeletePictogram(id))
-                        panelPict = null
-                    },
-                    onDismiss = { panelPict = null }
+                    allPictograms = state.allPictograms,
+                    currentFolderId = state.currentFolderId,
+                    currentDepth = state.folderPath.size,
+                    maxDepth = 3,
+                     onSave = { form ->
+                         component.onIntent(GridIntent.SavePictogram(form, editId = panelPict?.id))
+                         panelOpen = false
+                         panelPict = null
+                     },
+                     onDelete = { id ->
+                         component.onIntent(GridIntent.DeletePictogram(id))
+                         panelOpen = false
+                         panelPict = null
+                     },
+                     onAddReferences = { folderId, ids ->
+                         component.onIntent(GridIntent.AddExistingReferences(folderId, ids))
+                         panelOpen = false
+                         panelPict = null
+                     },
+                     onDismiss = { panelOpen = false; panelPict = null }
                 )
             }
         }
@@ -311,6 +322,7 @@ private fun ParentPictCard(
     val onSurface = MaterialTheme.colorScheme.onSurface
 
     Card(
+        onClick = onTap,
         modifier = Modifier
             .aspectRatio(1f)
             .padding(CaaSpacing.sp6),
