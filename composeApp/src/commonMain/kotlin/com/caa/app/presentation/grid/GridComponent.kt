@@ -90,11 +90,10 @@ class DefaultGridComponent(
     override fun onIntent(intent: GridIntent) {
         when (intent) {
             is GridIntent.TapPictogram -> {
+                speech.speak(intent.pictogram.speech)
+                _state.update { it.copy(sentence = it.sentence + intent.pictogram) }
                 if (intent.pictogram.isFolder) {
                     navigateToFolder(intent.pictogram)
-                } else {
-                    speech.speak(intent.pictogram.speech)
-                    _state.update { it.copy(sentence = it.sentence + intent.pictogram) }
                 }
             }
             GridIntent.SpeakSentence -> {

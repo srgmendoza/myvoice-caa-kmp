@@ -51,6 +51,7 @@ import com.caa.app.presentation.components.PictogramCell
 import com.caa.app.presentation.components.RightPanel
 import com.caa.app.presentation.components.SentenceBar
 import com.caa.app.presentation.components.rememberDebounce
+import com.caa.app.presentation.theme.CaaRadius
 import com.caa.app.presentation.theme.CaaSpacing
 import com.caa.app.presentation.theme.FitzgeraldPalette
 import com.caa.app.presentation.theme.fitzgeraldOf
@@ -113,6 +114,13 @@ fun GridScreen(component: GridComponent) {
                             onClear = { debounce.fire { component.onIntent(GridIntent.ClearSentence) } },
                             onRemoveLast = { debounce.fire { component.onIntent(GridIntent.RemoveLastFromSentence) } }
                         )
+                        if (state.folderStack.size > 1) {
+                            NestedNavigationBar(
+                                folderPath = state.folderPath,
+                                onBack = { component.onIntent(GridIntent.NavigateBack) },
+                                onHome = { component.onIntent(GridIntent.NavigateHome) }
+                            )
+                        }
                     }
                 }
             },
@@ -173,13 +181,7 @@ fun GridScreen(component: GridComponent) {
                                     ParentPictCard(
                                         pict = pict,
                                         palette = palette,
-                                        onTap = {
-                                            if (pict.isFolder) {
-                                                component.onIntent(GridIntent.NavigateToFolder(pict.id))
-                                            } else {
-                                                component.onIntent(GridIntent.TapPictogram(pict))
-                                            }
-                                        },
+                                        onTap = { component.onIntent(GridIntent.TapPictogram(pict)) },
                                          onEdit = { panelPict = pict; panelOpen = true },
                                         onDelete = { component.onIntent(GridIntent.DeletePictogram(pict.id)) }
                                     )
@@ -232,6 +234,76 @@ fun GridScreen(component: GridComponent) {
                      },
                      onDismiss = { panelOpen = false; panelPict = null }
                 )
+            }
+        }
+    }
+}
+
+// ─── Nested navigation ──────────────────────────────────────────────────────
+@Composable
+private fun NestedNavigationBar(
+    folderPath: List<Pictogram>,
+    onBack: () -> Unit,
+    onHome: () -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = BorderStroke(1.dp, SubtleBorder)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = CaaSpacing.sp16, vertical = CaaSpacing.sp8),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(CaaSpacing.sp12)
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(CaaRadius.sm))
+                    .background(MaterialTheme.colorScheme.surface)
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = stringResource(Res.string.action_back),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            IconButton(
+                onClick = onHome,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(CaaRadius.sm))
+                    .background(MaterialTheme.colorScheme.surface)
+            ) {
+                Icon(
+                    Icons.Rounded.Home,
+                    contentDescription = "Home",
+                    tint = MutedText
+                )
+            }
+
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = folderPath.lastOrNull()?.label?.uppercase() ?: "",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (folderPath.isNotEmpty()) {
+                    Text(
+                        text = folderPath.joinToString(" › ") { it.label.lowercase() },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MutedText,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }
