@@ -23,6 +23,12 @@ CREATE TABLE CategoryEntity (
     fitzgeraldKey TEXT NOT NULL DEFAULT 'verbs'
 );
 
+CREATE TABLE PictogramFolderLink (
+    pictogramId INTEGER NOT NULL,
+    folderId INTEGER,
+    PRIMARY KEY (pictogramId, folderId)
+);
+
 selectAllPictograms:
 SELECT * FROM PictogramEntity ORDER BY sortOrder ASC;
 
@@ -30,10 +36,16 @@ selectByCategory:
 SELECT * FROM PictogramEntity WHERE categoryId = ? ORDER BY sortOrder ASC;
 
 selectChildren:
-SELECT * FROM PictogramEntity WHERE parentId IS ? ORDER BY sortOrder ASC;
+SELECT DISTINCT p.* FROM PictogramEntity p
+LEFT JOIN PictogramFolderLink l ON p.id = l.pictogramId
+WHERE (p.parentId IS ?) OR (l.folderId = ?)
+ORDER BY p.sortOrder ASC;
 
 selectChildrenByCategory:
-SELECT * FROM PictogramEntity WHERE parentId IS ? AND categoryId = ? ORDER BY sortOrder ASC;
+SELECT DISTINCT p.* FROM PictogramEntity p
+LEFT JOIN PictogramFolderLink l ON p.id = l.pictogramId
+WHERE ((p.parentId IS ?) OR (l.folderId = ?)) AND p.categoryId = ?
+ORDER BY p.sortOrder ASC;
 
 selectRootChildren:
 SELECT * FROM PictogramEntity WHERE parentId IS NULL ORDER BY sortOrder ASC;
@@ -53,11 +65,20 @@ INSERT INTO PictogramEntity(
 insertCategory:
 INSERT INTO CategoryEntity(name, colorHex, sortOrder, fitzgeraldKey) VALUES (?, ?, ?, ?);
 
+insertFolderLink:
+INSERT OR IGNORE INTO PictogramFolderLink(pictogramId, folderId) VALUES (?, ?);
+
 deletePictogram:
 DELETE FROM PictogramEntity WHERE id = ?;
 
 deleteChildren:
 DELETE FROM PictogramEntity WHERE parentId = ?;
+
+deleteFolderLink:
+DELETE FROM PictogramFolderLink WHERE pictogramId = ? AND folderId = ?;
+
+deleteFolderLinksForFolder:
+DELETE FROM PictogramFolderLink WHERE folderId = ?;
 
 updatePictogram:
 UPDATE PictogramEntity SET
@@ -67,3 +88,6 @@ WHERE id = ?;
 
 updateSortOrder:
 UPDATE PictogramEntity SET sortOrder = ? WHERE id = ?;
+
+selectLastInsertId:
+SELECT last_insert_rowid();

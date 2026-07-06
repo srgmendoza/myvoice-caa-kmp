@@ -12,12 +12,14 @@ data class PictogramFormData(
     val isFolder: Boolean = false,
     val imageSource: String = "arasaac",
     val arasaacId: Int? = null,
-    val customImage: String? = null
+    val customImage: String? = null,
+    val childIds: List<Long> = emptyList()
 )
 
 @Immutable
 data class GridState(
     val pictograms: List<Pictogram> = emptyList(),
+    val allPictograms: List<Pictogram> = emptyList(),
     val categories: List<Category> = emptyList(),
     val selectedCategoryId: Long? = null,
     val sentence: List<Pictogram> = emptyList(),
@@ -46,4 +48,5 @@ sealed interface GridIntent {
     data object AddPictogram : GridIntent
     data class SavePictogram(val form: PictogramFormData, val editId: Long? = null) : GridIntent
     data class DeletePictogram(val id: Long) : GridIntent
+    data class AddExistingReferences(val folderId: Long, val pictogramIds: List<Long>) : GridIntent
 }

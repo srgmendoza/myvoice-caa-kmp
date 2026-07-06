@@ -11,3 +11,8 @@ Pods/
 DerivedData/
 *.generated.swift
 .kotlin/metadata/
+
+# Claude memory system: local index, trash, backups (all regenerable/private)
+.claude/memory/.index.db
+.claude/memory/.backup/
+.claude/memory/.trash/

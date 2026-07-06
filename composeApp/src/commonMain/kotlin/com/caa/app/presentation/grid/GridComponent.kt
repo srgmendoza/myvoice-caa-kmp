@@ -68,6 +68,12 @@ class DefaultGridComponent(
         }
 
         scope.launch {
+            repository.observeAll().collect { all ->
+                _state.update { it.copy(allPictograms = all) }
+            }
+        }
+
+        scope.launch {
             settings.observe().collect { s ->
                 _state.update { it.copy(debounceMs = s.debounceMs, isLoading = false) }
             }
@@ -84,11 +90,10 @@ class DefaultGridComponent(
     override fun onIntent(intent: GridIntent) {
         when (intent) {
             is GridIntent.TapPictogram -> {
-                if (intent.pictogram.isFolder && isParentMode) {
+                speech.speak(intent.pictogram.speech)
+                _state.update { it.copy(sentence = it.sentence + intent.pictogram) }
+                if (intent.pictogram.isFolder) {
                     navigateToFolder(intent.pictogram)
-                } else {
-                    speech.speak(intent.pictogram.speech)
-                    _state.update { it.copy(sentence = it.sentence + intent.pictogram) }
                 }
             }
             GridIntent.SpeakSentence -> {
@@ -136,6 +141,12 @@ class DefaultGridComponent(
             GridIntent.AddPictogram -> {
                 // Handled by the screen
             }
+            is GridIntent.AddExistingReferences -> {
+                scope.launch {
+                    repository.addReferencesToFolder(intent.folderId, intent.pictogramIds)
+                    folderVersion.value++
+                }
+            }
             is GridIntent.SavePictogram -> {
                 scope.launch {
                     val folderId = _state.value.currentFolderId
@@ -154,8 +165,18 @@ class DefaultGridComponent(
                         fitzKey = form.fitzKey.storage,
                         sortOrder = _state.value.pictograms.size
                     )
-                    if (intent.editId != null) repository.update(pict)
-                    else repository.add(pict)
+                    if (intent.editId != null) {
+                        repository.update(pict)
+                        if (form.childIds.isNotEmpty()) {
+                            repository.addReferencesToFolder(intent.editId, form.childIds)
+                        }
+                    } else {
+                        val newId = repository.add(pict)
+                        if (form.isFolder && form.childIds.isNotEmpty()) {
+                            repository.addReferencesToFolder(newId, form.childIds)
+                        }
+                    }
+                    folderVersion.value++
                 }
             }
             is GridIntent.DeletePictogram -> {
