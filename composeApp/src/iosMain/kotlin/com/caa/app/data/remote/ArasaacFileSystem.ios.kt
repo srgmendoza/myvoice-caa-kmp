@@ -69,4 +69,7 @@ actual class ArasaacFileSystem {
     }
 
     actual fun fileExists(path: String): Boolean = NSFileManager.defaultManager.fileExistsAtPath(path)
+
+    actual fun deleteFile(path: String): Boolean =
+        NSFileManager.defaultManager.removeItemAtPath(path, null)
 }

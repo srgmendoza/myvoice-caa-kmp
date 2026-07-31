@@ -18,4 +18,6 @@ actual class ArasaacFileSystem(private val context: Context) {
         return runCatching { File(path).writeText(text); true }.getOrDefault(false)
     }
     actual fun fileExists(path: String): Boolean = File(path).exists()
+    actual fun deleteFile(path: String): Boolean =
+        runCatching { File(path).delete() }.getOrDefault(false)
 }
