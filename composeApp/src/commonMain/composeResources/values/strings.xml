@@ -78,7 +78,7 @@
 
     <!-- Parental gate -->
     <string name="gate_title">Modo padres</string>
-    <string name="gate_challenge">Resuelve: %1$d × %2$d</string>
+    <string name="gate_challenge">Resuelve: %1$d + %2$d</string>
     <string name="gate_answer">Respuesta</string>
     <string name="gate_wait">Espera %1$d s</string>
     <string name="gate_wrong">Incorrecto (intento %1$d/%2$d)</string>
