@@ -24,10 +24,12 @@ CREATE TABLE CategoryEntity (
 );
 
 CREATE TABLE PictogramFolderLink (
-    pictogramId INTEGER NOT NULL,
-    folderId INTEGER,
+    pictogramId INTEGER NOT NULL REFERENCES PictogramEntity(id) ON DELETE CASCADE,
+    folderId INTEGER NOT NULL REFERENCES PictogramEntity(id) ON DELETE CASCADE,
     PRIMARY KEY (pictogramId, folderId)
 );
+
+CREATE INDEX idx_link_folder ON PictogramFolderLink(folderId);
 
 selectAllPictograms:
 SELECT * FROM PictogramEntity ORDER BY sortOrder ASC;
@@ -38,17 +40,23 @@ SELECT * FROM PictogramEntity WHERE categoryId = ? ORDER BY sortOrder ASC;
 selectChildren:
 SELECT DISTINCT p.* FROM PictogramEntity p
 LEFT JOIN PictogramFolderLink l ON p.id = l.pictogramId
-WHERE (p.parentId IS ?) OR (l.folderId = ?)
+WHERE (p.parentId = ?) OR (l.folderId = ?)
 ORDER BY p.sortOrder ASC;
 
 selectChildrenByCategory:
 SELECT DISTINCT p.* FROM PictogramEntity p
 LEFT JOIN PictogramFolderLink l ON p.id = l.pictogramId
-WHERE ((p.parentId IS ?) OR (l.folderId = ?)) AND p.categoryId = ?
+WHERE ((p.parentId = ?) OR (l.folderId = ?)) AND p.categoryId = ?
 ORDER BY p.sortOrder ASC;
 
 selectRootChildren:
 SELECT * FROM PictogramEntity WHERE parentId IS NULL ORDER BY sortOrder ASC;
+
+selectRootChildrenByCategory:
+SELECT * FROM PictogramEntity WHERE parentId IS NULL AND categoryId = ? ORDER BY sortOrder ASC;
+
+selectChildIds:
+SELECT id FROM PictogramEntity WHERE parentId = ?;
 
 selectPictogramById:
 SELECT * FROM PictogramEntity WHERE id = ?;
@@ -71,14 +79,14 @@ INSERT OR IGNORE INTO PictogramFolderLink(pictogramId, folderId) VALUES (?, ?);
 deletePictogram:
 DELETE FROM PictogramEntity WHERE id = ?;
 
-deleteChildren:
-DELETE FROM PictogramEntity WHERE parentId = ?;
-
 deleteFolderLink:
 DELETE FROM PictogramFolderLink WHERE pictogramId = ? AND folderId = ?;
 
 deleteFolderLinksForFolder:
 DELETE FROM PictogramFolderLink WHERE folderId = ?;
+
+deleteLinksForPictogram:
+DELETE FROM PictogramFolderLink WHERE folderId = ? OR pictogramId = ?;
 
 updatePictogram:
 UPDATE PictogramEntity SET

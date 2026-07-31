@@ -1,0 +1,19 @@
+-- Recreate PictogramFolderLink with NOT NULL folderId (NULL bypassed composite PK
+-- uniqueness), foreign keys with ON DELETE CASCADE, and an index on folderId.
+ALTER TABLE PictogramFolderLink RENAME TO PictogramFolderLink_old;
+
+CREATE TABLE PictogramFolderLink (
+    pictogramId INTEGER NOT NULL REFERENCES PictogramEntity(id) ON DELETE CASCADE,
+    folderId INTEGER NOT NULL REFERENCES PictogramEntity(id) ON DELETE CASCADE,
+    PRIMARY KEY (pictogramId, folderId)
+);
+
+INSERT OR IGNORE INTO PictogramFolderLink(pictogramId, folderId)
+SELECT pictogramId, folderId FROM PictogramFolderLink_old
+WHERE folderId IS NOT NULL
+  AND pictogramId IN (SELECT id FROM PictogramEntity)
+  AND folderId IN (SELECT id FROM PictogramEntity);
+
+DROP TABLE PictogramFolderLink_old;
+
+CREATE INDEX idx_link_folder ON PictogramFolderLink(folderId);

@@ -13,7 +13,5 @@
         <string>UIInterfaceOrientationLandscapeLeft</string>
         <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
-    <key>NSSpeechRecognitionUsageDescription</key>
-    <string>App necesita síntesis de voz para hablar pictogramas</string>
 </dict>
 </plist>

@@ -18,9 +18,39 @@ import caa_kmp.composeapp.generated.resources.gate_wrong
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import kotlin.random.Random
+import kotlin.time.TimeSource
 
 private const val MAX_ATTEMPTS = 3
 private const val COOLDOWN_MS = 5000L
+
+/**
+ * Process-lifetime lockout state, shared across dialog instances so that
+ * dismissing and reopening the gate does NOT reset attempts or an active cooldown.
+ * (Reset on process death is acceptable.)
+ */
+private object GateLockState {
+    var attempts: Int = 0
+    private var lockStart: TimeSource.Monotonic.ValueTimeMark? = null
+
+    fun startLock() {
+        lockStart = TimeSource.Monotonic.markNow()
+    }
+
+    fun remainingLockMs(): Long {
+        val start = lockStart ?: return 0L
+        val remaining = COOLDOWN_MS - start.elapsedNow().inWholeMilliseconds
+        if (remaining <= 0L) {
+            lockStart = null
+            return 0L
+        }
+        return remaining
+    }
+
+    fun reset() {
+        attempts = 0
+        lockStart = null
+    }
+}
 
 @Composable
 fun ParentalGateDialog(
@@ -30,19 +60,21 @@ fun ParentalGateDialog(
     var challenge by remember { mutableStateOf(generateChallenge()) }
     var input by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
-    var attempts by remember { mutableStateOf(0) }
-    var lockedUntilMs by remember { mutableStateOf(0L) }
-    var nowMs by remember { mutableStateOf(0L) }
+    var attemptsShown by remember { mutableStateOf(GateLockState.attempts) }
+    var remainingMs by remember { mutableStateOf(GateLockState.remainingLockMs()) }
+    // Incremented each time a new lock starts, to restart the countdown effect.
+    var lockTick by remember { mutableStateOf(0) }
 
-    LaunchedEffect(lockedUntilMs) {
-        while (lockedUntilMs > nowMs) {
-            nowMs += 1000
-            delay(1000)
+    LaunchedEffect(lockTick) {
+        remainingMs = GateLockState.remainingLockMs()
+        while (remainingMs > 0L) {
+            delay(minOf(1000L, remainingMs))
+            remainingMs = GateLockState.remainingLockMs()
         }
     }
 
-    val locked = lockedUntilMs > nowMs
-    val secondsLeft = ((lockedUntilMs - nowMs).coerceAtLeast(0) / 1000).toInt() + 1
+    val locked = remainingMs > 0L
+    val secondsLeft = ((remainingMs + 999) / 1000).toInt()
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -69,7 +101,7 @@ fun ParentalGateDialog(
                 } else if (error) {
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        stringResource(Res.string.gate_wrong, attempts, MAX_ATTEMPTS),
+                        stringResource(Res.string.gate_wrong, attemptsShown, MAX_ATTEMPTS),
                         color = MaterialTheme.colorScheme.error
                     )
                 }
@@ -78,17 +110,21 @@ fun ParentalGateDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (locked) return@TextButton
+                    if (locked || GateLockState.remainingLockMs() > 0L) return@TextButton
                     if (input.toIntOrNull() == challenge.result) {
+                        GateLockState.reset()
                         onPass()
                     } else {
-                        attempts++
+                        GateLockState.attempts++
+                        attemptsShown = GateLockState.attempts
                         error = true
                         input = ""
-                        if (attempts >= MAX_ATTEMPTS) {
-                            lockedUntilMs = nowMs + COOLDOWN_MS
-                            attempts = 0
+                        if (GateLockState.attempts >= MAX_ATTEMPTS) {
+                            GateLockState.attempts = 0
+                            attemptsShown = 0
+                            GateLockState.startLock()
                             challenge = generateChallenge()
+                            lockTick++
                         }
                     }
                 },
@@ -102,8 +138,14 @@ fun ParentalGateDialog(
 }
 
 private data class Challenge(val a: Int, val b: Int) {
-    val result: Int = a * b
+    val result: Int = a + b
 }
 
-private fun generateChallenge(): Challenge =
-    Challenge(Random.nextInt(6, 13), Random.nextInt(6, 13))
+/** Sum challenge per spec: two addends whose total is in 11..19. */
+private fun generateChallenge(): Challenge {
+    val a = Random.nextInt(4, 10) // 4..9
+    val minB = (11 - a).coerceAtLeast(2)
+    val maxB = 19 - a
+    val b = Random.nextInt(minB, maxB + 1)
+    return Challenge(a, b)
+}

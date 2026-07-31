@@ -1,8 +1,5 @@
 package com.caa.app.presentation.components
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -44,14 +41,8 @@ fun PictogramCell(
 
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.95f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "tilePress"
-    )
+    // Instant pressed-state feedback, no animation (kid-first constraint).
+    val scale = if (pressed) 0.95f else 1f
 
     Card(
         onClick = onClick,

@@ -15,7 +15,6 @@ import com.caa.app.presentation.grid.DefaultGridComponent
 import com.caa.app.presentation.grid.GridComponent
 import com.caa.app.presentation.settings.DefaultSettingsComponent
 import com.caa.app.presentation.settings.SettingsComponent
-import kotlinx.serialization.Serializable
 
 interface RootComponent {
     val stack: Value<ChildStack<*, Child>>
@@ -34,11 +33,10 @@ class DefaultRootComponent(
     private val speech: SpeechEngine
 ) : RootComponent, ComponentContext by componentContext {
 
-    @Serializable
     private sealed interface Config {
-        @Serializable data object Grid : Config
-        @Serializable data object Parent : Config
-        @Serializable data object Settings : Config
+        data object Grid : Config
+        data object Parent : Config
+        data object Settings : Config
     }
 
     private val nav = StackNavigation<Config>()
@@ -46,7 +44,9 @@ class DefaultRootComponent(
     override val stack: Value<ChildStack<*, RootComponent.Child>> =
         childStack(
             source = nav,
-            serializer = Config.serializer(),
+            // Security: no stack persistence. Parent mode must never survive process
+            // death/restore — the app always cold-starts into the kid Grid screen.
+            serializer = null,
             initialConfiguration = Config.Grid,
             handleBackButton = true,
             childFactory = ::createChild

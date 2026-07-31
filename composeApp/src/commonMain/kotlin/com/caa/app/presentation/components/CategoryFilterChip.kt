@@ -1,9 +1,5 @@
 package com.caa.app.presentation.components
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -37,26 +33,14 @@ fun CategoryFilterChip(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.94f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "chipPress"
-    )
-    val bg by animateColorAsState(
-        if (selected) accent else MaterialTheme.colorScheme.surface,
-        label = "chipBg"
-    )
-    val fg by animateColorAsState(
-        if (selected) onAccent else MaterialTheme.colorScheme.onSurface,
-        label = "chipFg"
-    )
+    // Instant pressed-state feedback and color switch, no animation (kid-first constraint).
+    val scale = if (pressed) 0.94f else 1f
+    val bg = if (selected) accent else MaterialTheme.colorScheme.surface
+    val fg = if (selected) onAccent else MaterialTheme.colorScheme.onSurface
 
     Surface(
         modifier = modifier
-            .height(44.dp)
+            .height(48.dp)
             .graphicsLayer { scaleX = scale; scaleY = scale }
             .clip(RoundedCornerShape(CaaRadius.full))
             .clickable(interactionSource = interaction, indication = null, onClick = onClick),
