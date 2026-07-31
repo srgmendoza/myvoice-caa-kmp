@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -73,6 +74,10 @@ kotlin {
             implementation(libs.sqldelight.native)
             implementation(libs.ktor.darwin)
         }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+        }
     }
 }
 
@@ -95,9 +100,46 @@ android {
     packaging {
         resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
+    // Release signing: reads credentials from environment variables or local.properties.
+    // If they are absent (CI without secrets, fresh dev checkout) the release build stays unsigned.
+    val localProps = Properties().apply {
+        val f = rootProject.file("local.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+    fun releaseProp(name: String): String? =
+        System.getenv(name) ?: localProps.getProperty(name)
+
+    val releaseStoreFile = releaseProp("RELEASE_STORE_FILE")
+    val releaseStorePassword = releaseProp("RELEASE_STORE_PASSWORD")
+    val releaseKeyAlias = releaseProp("RELEASE_KEY_ALIAS")
+    val releaseKeyPassword = releaseProp("RELEASE_KEY_PASSWORD")
+    val hasReleaseSigning = !releaseStoreFile.isNullOrBlank() &&
+        !releaseStorePassword.isNullOrBlank() &&
+        !releaseKeyAlias.isNullOrBlank() &&
+        !releaseKeyPassword.isNullOrBlank()
+
+    if (hasReleaseSigning) {
+        signingConfigs.create("release") {
+            storeFile = file(releaseStoreFile!!)
+            storePassword = releaseStorePassword
+            keyAlias = releaseKeyAlias
+            keyPassword = releaseKeyPassword
+        }
+    }
+
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                null // unsigned release; provide RELEASE_* credentials to sign
+            }
         }
     }
 }
