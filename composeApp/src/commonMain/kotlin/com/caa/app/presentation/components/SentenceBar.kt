@@ -1,8 +1,5 @@
 package com.caa.app.presentation.components
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -136,14 +133,8 @@ private fun SentenceToken(
 
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.94f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "tokenPress"
-    )
+    // Instant pressed-state feedback, no animation (kid-first constraint).
+    val scale = if (pressed) 0.94f else 1f
 
     Surface(
         modifier = Modifier
@@ -200,14 +191,8 @@ private fun SentenceIconButton(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (pressed) 0.92f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "iconPress"
-    )
+    // Instant pressed-state feedback, no animation (kid-first constraint).
+    val scale = if (pressed) 0.92f else 1f
     FilledIconButton(
         onClick = onClick,
         interactionSource = interaction,

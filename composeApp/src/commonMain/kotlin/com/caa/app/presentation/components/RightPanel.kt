@@ -2,6 +2,7 @@ package com.caa.app.presentation.components
 
 import androidx.compose.animation.*
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -18,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -34,6 +36,8 @@ import com.caa.app.platform.image.rememberFilePicker
 import com.caa.app.platform.image.rememberImagePicker
 import com.caa.app.presentation.grid.PictogramFormData
 import com.caa.app.presentation.theme.fitzgeraldOf
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -66,13 +70,15 @@ fun RightPanel(
     var imageTab by remember { mutableStateOf("arasaac") }
     var pendingCropPath by remember { mutableStateOf<String?>(null) }
     var showDelete by remember { mutableStateOf(false) }
+    var downloadingImage by remember { mutableStateOf(false) }
+    var downloadJob by remember { mutableStateOf<Job?>(null) }
     // Library picker state — reset when panel opens/closes
     var selectedIds by remember(visible) { mutableStateOf<Set<Long>>(emptySet()) }
     var libSearch by remember(visible) { mutableStateOf("") }
     var libFilter by remember(visible) { mutableStateOf<FitzgeraldKey?>(null) }
 
     val scope = rememberCoroutineScope()
-    val canSave by derivedStateOf { label.isNotBlank() && (!isFolder || selectedIds.isNotEmpty()) }
+    val canSave by remember { derivedStateOf { label.isNotBlank() } }
     val canBeFolder = currentDepth < maxDepth
     val palette = fitzgeraldOf(fitzKey)
 
@@ -90,7 +96,9 @@ fun RightPanel(
         exit = slideOutHorizontally { it }
     ) {
         Surface(
-            modifier = Modifier.fillMaxHeight().width(380.dp),
+            modifier = Modifier.fillMaxHeight().width(380.dp)
+                // Consume taps so panel whitespace never reaches the scrim behind it.
+                .pointerInput(Unit) { detectTapGestures {} },
             color = MaterialTheme.colorScheme.surface,
             shadowElevation = 8.dp
         ) {
@@ -122,8 +130,16 @@ fun RightPanel(
                         }
                         when (imageTab) {
                             "arasaac" -> ArasaacSearchTab(arasaacRepo = arasaacRepo, selectedId = arasaacId, onSelect = { id ->
-                                arasaacId = id; imageSource = "arasaac"
-                                scope.launch { arasaacRepo.downloadImage(id)?.let { customImage = it } }
+                                arasaacId = id; imageSource = "arasaac"; customImage = null
+                                downloadJob?.cancel()
+                                downloadingImage = true
+                                downloadJob = scope.launch {
+                                    try {
+                                        arasaacRepo.downloadImage(id)?.let { customImage = it }
+                                    } finally {
+                                        downloadingImage = false
+                                    }
+                                }
                             })
                             "photo" -> GalleryTab(customImage = customImage, onImagePicked = { path ->
                                 imageSource = "photo"; arasaacId = null; pendingCropPath = path
@@ -166,8 +182,26 @@ fun RightPanel(
                 HorizontalDivider(color = Color(0xFFE8EAED))
                 Box(Modifier.fillMaxWidth().padding(16.dp)) {
                     Button(
-                        onClick = { onSave(PictogramFormData(label.trim(), speech.trim(), fitzKey, isFolder, imageSource, arasaacId, customImage, childIds = selectedIds.toList())) },
-                        enabled = canSave,
+                        onClick = {
+                            scope.launch {
+                                // Await any in-flight ARASAAC download so we never persist
+                                // an arasaacId with a null customImage.
+                                val pendingArasaacId = arasaacId
+                                if (imageSource == "arasaac" && pendingArasaacId != null && customImage == null) {
+                                    downloadingImage = true
+                                    try {
+                                        downloadJob?.join()
+                                        if (customImage == null) {
+                                            arasaacRepo.downloadImage(pendingArasaacId)?.let { customImage = it }
+                                        }
+                                    } finally {
+                                        downloadingImage = false
+                                    }
+                                }
+                                onSave(PictogramFormData(label.trim(), speech.trim(), fitzKey, isFolder, imageSource, arasaacId, customImage, childIds = selectedIds.toList()))
+                            }
+                        },
+                        enabled = canSave && !downloadingImage,
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = RoundedCornerShape(14.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF43A047))
                     ) { Text(if (isEdit) "Guardar cambios" else "Añadir", fontWeight = FontWeight.Black, fontSize = 16.sp) }
@@ -200,7 +234,8 @@ fun RightPanel(
     pendingCropPath?.let { src ->
         CropDialog(
             sourcePath = src,
-            onCancel = { pendingCropPath = null; customImage = null; imageSource = "arasaac" },
+            // Cancel only discards the pending crop; any prior selection stays intact.
+            onCancel = { pendingCropPath = null },
             onConfirm = { cropped -> customImage = cropped; pendingCropPath = null }
         )
     }
@@ -309,104 +344,32 @@ private fun LibraryContent(
     }
 }
 
-// ─── Library picker tab ──────────────────────────────────────────────────────
-@Composable
-private fun LibraryTabContent(
-    displayedPicts: List<Pictogram>,
-    selectedIds: Set<Long>,
-    onToggle: (Long) -> Unit,
-    libSearch: String, onLibSearch: (String) -> Unit,
-    libFilter: FitzgeraldKey?, onLibFilter: (FitzgeraldKey?) -> Unit,
-) {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        // Search
-        OutlinedTextField(
-            value = libSearch, onValueChange = onLibSearch,
-            placeholder = { Text("Buscar...", color = Color(0xFFAAAAAA)) },
-            leadingIcon = { Icon(Icons.Rounded.Search, null, tint = Color(0xFFAAAAAA)) },
-            singleLine = true, shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth(),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color(0xFFE8EAED), focusedBorderColor = Color(0xFF43A047),
-                unfocusedContainerColor = Color(0xFFF8F9FA), focusedContainerColor = Color(0xFFF8F9FA)
-            )
-        )
-
-        // Fitzgerald filter
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            item {
-                FilterChip(
-                    selected = libFilter == null,
-                    onClick = { onLibFilter(null) },
-                    label = { Text("Todos", fontWeight = FontWeight.Bold, fontSize = 11.sp) }
-                )
-            }
-            items(FitzgeraldKey.entries.toList(), key = { it.storage }) { k ->
-                val p = fitzgeraldOf(k)
-                FilterChip(
-                    selected = libFilter == k,
-                    onClick = { onLibFilter(k) },
-                    label = { Text(k.displayName, fontWeight = FontWeight.Bold, fontSize = 11.sp) }
-                )
-            }
-        }
-
-        // Grid
-        if (displayedPicts.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("No hay pictos disponibles", fontSize = 12.sp, color = Color(0xFF999999))
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 80.dp),
-                modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                items(displayedPicts, key = { it.id }) { pict ->
-                    val selected = pict.id in selectedIds
-                    Card(
-                        modifier = Modifier.aspectRatio(1f).clickable { onToggle(pict.id) },
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = if (selected) Color(0xFFE8F5E9) else MaterialTheme.colorScheme.surface),
-                        border = if (selected) BorderStroke(2.dp, Color(0xFF43A047)) else BorderStroke(1.dp, Color(0xFFE8EAED))
-                    ) {
-                        Box(Modifier.fillMaxSize()) {
-                            com.caa.app.presentation.components.PictogramImage(
-                                path = pict.imagePath,
-                                contentDescription = pict.label,
-                                modifier = Modifier.fillMaxSize().padding(4.dp),
-                                tint = if (pict.imagePath.startsWith("ic_")) MaterialTheme.colorScheme.onSurface else Color.Unspecified
-                            )
-                            if (selected) {
-                                Box(Modifier.align(Alignment.TopStart).padding(2.dp).size(18.dp).clip(RoundedCornerShape(4.dp)).background(Color(0xFF43A047)),
-                                    contentAlignment = Alignment.Center) {
-                                    Icon(Icons.Rounded.Check, null, tint = Color.White, modifier = Modifier.size(12.dp))
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
 // ─── ARASAAC Search Tab ─────────────────────────────────────────────────────
 @Composable
 private fun ArasaacSearchTab(arasaacRepo: ArasaacRepository, selectedId: Int?, onSelect: (Int) -> Unit) {
     var query by remember { mutableStateOf("") }
     var results by remember { mutableStateOf<List<ArasaacPictogram>>(emptyList()) }
     var searching by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+
+    // Debounced, auto-cancelling search: stale responses can never overwrite newer ones.
+    LaunchedEffect(query) {
+        if (query.length >= 2) {
+            delay(300)
+            searching = true
+            try {
+                results = arasaacRepo.search(query)
+            } finally {
+                searching = false
+            }
+        } else {
+            results = emptyList()
+            searching = false
+        }
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
-            value = query, onValueChange = {
-                query = it
-                if (it.length >= 2) { searching = true; scope.launch { results = arasaacRepo.search(it); searching = false } }
-                else results = emptyList()
-            },
+            value = query, onValueChange = { query = it },
             placeholder = { Text("Buscar...", color = Color(0xFFAAAAAA)) },
             leadingIcon = { Icon(Icons.Rounded.Search, null, tint = Color(0xFFAAAAAA)) },
             singleLine = true, shape = RoundedCornerShape(12.dp), modifier = Modifier.fillMaxWidth(),

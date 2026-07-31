@@ -15,6 +15,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
 
@@ -91,9 +92,11 @@ class DefaultGridComponent(
         when (intent) {
             is GridIntent.TapPictogram -> {
                 speech.speak(intent.pictogram.speech)
-                _state.update { it.copy(sentence = it.sentence + intent.pictogram) }
                 if (intent.pictogram.isFolder) {
+                    // Folders navigate only: audible feedback but no sentence token.
                     navigateToFolder(intent.pictogram)
+                } else {
+                    _state.update { it.copy(sentence = it.sentence + intent.pictogram) }
                 }
             }
             GridIntent.SpeakSentence -> {
@@ -151,26 +154,41 @@ class DefaultGridComponent(
                 scope.launch {
                     val folderId = _state.value.currentFolderId
                     val form = intent.form
-                    val pict = Pictogram(
-                        id = intent.editId ?: 0,
-                        label = form.label,
-                        speech = form.speech,
-                        parentId = if (intent.editId != null) {
-                            _state.value.pictograms.firstOrNull { it.id == intent.editId }?.parentId
-                        } else folderId,
-                        isFolder = form.isFolder,
-                        imageSource = form.imageSource,
-                        arasaacId = form.arasaacId,
-                        customImage = form.customImage,
-                        fitzKey = form.fitzKey.storage,
-                        sortOrder = _state.value.pictograms.size
-                    )
                     if (intent.editId != null) {
-                        repository.update(pict)
-                        if (form.childIds.isNotEmpty()) {
-                            repository.addReferencesToFolder(intent.editId, form.childIds)
+                        // Fetch the persisted entity (not the filtered visible list) and
+                        // copy only form-edited fields, preserving categoryId, colorHex,
+                        // iconKey, sortOrder and parentId.
+                        val existing = repository.observeAll().first()
+                            .firstOrNull { it.id == intent.editId }
+                        if (existing != null) {
+                            repository.update(
+                                existing.copy(
+                                    label = form.label,
+                                    speech = form.speech,
+                                    isFolder = form.isFolder,
+                                    imageSource = form.imageSource,
+                                    arasaacId = form.arasaacId,
+                                    customImage = form.customImage,
+                                    fitzKey = form.fitzKey.storage
+                                )
+                            )
+                            if (form.childIds.isNotEmpty()) {
+                                repository.addReferencesToFolder(intent.editId, form.childIds)
+                            }
                         }
                     } else {
+                        val pict = Pictogram(
+                            id = 0,
+                            label = form.label,
+                            speech = form.speech,
+                            parentId = folderId,
+                            isFolder = form.isFolder,
+                            imageSource = form.imageSource,
+                            arasaacId = form.arasaacId,
+                            customImage = form.customImage,
+                            fitzKey = form.fitzKey.storage,
+                            sortOrder = _state.value.pictograms.size
+                        )
                         val newId = repository.add(pict)
                         if (form.isFolder && form.childIds.isNotEmpty()) {
                             repository.addReferencesToFolder(newId, form.childIds)

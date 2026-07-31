@@ -1,8 +1,5 @@
 package com.caa.app.presentation.grid
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -79,6 +76,9 @@ fun GridScreen(component: GridComponent) {
     var panelOpen by remember { mutableStateOf(false) }
     var panelPict by remember { mutableStateOf<Pictogram?>(null) }
 
+    // Parent-grid delete confirmation target
+    var deleteTarget by remember { mutableStateOf<Pictogram?>(null) }
+
     if (showGate) {
         ParentalGateDialog(
             onPass = { showGate = false; component.onParentalGate() },
@@ -117,8 +117,8 @@ fun GridScreen(component: GridComponent) {
                         if (state.folderStack.size > 1) {
                             NestedNavigationBar(
                                 folderPath = state.folderPath,
-                                onBack = { component.onIntent(GridIntent.NavigateBack) },
-                                onHome = { component.onIntent(GridIntent.NavigateHome) }
+                                onBack = { debounce.fire { component.onIntent(GridIntent.NavigateBack) } },
+                                onHome = { debounce.fire { component.onIntent(GridIntent.NavigateHome) } }
                             )
                         }
                     }
@@ -126,7 +126,7 @@ fun GridScreen(component: GridComponent) {
             },
             floatingActionButton = {
                 if (!state.isParentMode) {
-                    FloatingActionButton(onClick = { showGate = true }) {
+                    FloatingActionButton(onClick = { debounce.fire { showGate = true } }) {
                         Icon(Icons.Rounded.Settings, contentDescription = stringResource(Res.string.grid_settings_cd))
                     }
                 }
@@ -148,7 +148,7 @@ fun GridScreen(component: GridComponent) {
                                     selected = state.selectedCategoryId == null,
                                     accent = MaterialTheme.colorScheme.primary,
                                     onAccent = MaterialTheme.colorScheme.onPrimary,
-                                    onClick = { component.onIntent(GridIntent.SelectCategory(null)) }
+                                    onClick = { debounce.fire { component.onIntent(GridIntent.SelectCategory(null)) } }
                                 )
                             }
                             items(state.categories, key = { it.id }) { c ->
@@ -158,7 +158,7 @@ fun GridScreen(component: GridComponent) {
                                     selected = state.selectedCategoryId == c.id,
                                     accent = palette.bg,
                                     onAccent = palette.fg,
-                                    onClick = { component.onIntent(GridIntent.SelectCategory(c.id)) }
+                                    onClick = { debounce.fire { component.onIntent(GridIntent.SelectCategory(c.id)) } }
                                 )
                             }
                         }
@@ -183,7 +183,7 @@ fun GridScreen(component: GridComponent) {
                                         palette = palette,
                                         onTap = { component.onIntent(GridIntent.TapPictogram(pict)) },
                                          onEdit = { panelPict = pict; panelOpen = true },
-                                        onDelete = { component.onIntent(GridIntent.DeletePictogram(pict.id)) }
+                                        onDelete = { deleteTarget = pict }
                                     )
                                 } else {
                                     PictogramCell(
@@ -203,10 +203,40 @@ fun GridScreen(component: GridComponent) {
             }
         }
 
+        // Delete confirmation (parent grid)
+        deleteTarget?.let { target ->
+            AlertDialog(
+                onDismissRequest = { deleteTarget = null },
+                shape = RoundedCornerShape(20.dp),
+                title = { Text("Eliminar pictograma", fontWeight = FontWeight.Black, fontSize = 18.sp) },
+                text = {
+                    Column {
+                        Text("¿Eliminar \"${target.label}\" permanentemente?", fontSize = 14.sp)
+                        if (target.isFolder) {
+                            Spacer(Modifier.height(8.dp))
+                            Text("Los pictogramas dentro de esta carpeta también se eliminarán.", fontSize = 12.sp, color = DangerColor)
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            component.onIntent(GridIntent.DeletePictogram(target.id))
+                            deleteTarget = null
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = DangerColor)
+                    ) { Text("Eliminar", fontWeight = FontWeight.Bold) }
+                },
+                dismissButton = { TextButton(onClick = { deleteTarget = null }) { Text("Cancelar") } }
+            )
+        }
+
         // Right panel overlay
         if (panelOpen) {
             Box(
-                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f)).clickable { panelPict = null },
+                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.3f))
+                    // Scrim tap closes the panel entirely — never mutate the edit target alone.
+                    .clickable { panelOpen = false; panelPict = null },
                 contentAlignment = Alignment.CenterEnd
             ) {
                 RightPanel(
@@ -261,7 +291,7 @@ private fun NestedNavigationBar(
             IconButton(
                 onClick = onBack,
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(48.dp)
                     .clip(RoundedCornerShape(CaaRadius.sm))
                     .background(MaterialTheme.colorScheme.surface)
             ) {
@@ -275,7 +305,7 @@ private fun NestedNavigationBar(
             IconButton(
                 onClick = onHome,
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(48.dp)
                     .clip(RoundedCornerShape(CaaRadius.sm))
                     .background(MaterialTheme.colorScheme.surface)
             ) {
@@ -454,11 +484,11 @@ private fun ParentPictCard(
                 }
             }
 
-            IconButton(onClick = onEdit, modifier = Modifier.align(Alignment.BottomStart).size(32.dp)) {
-                Icon(Icons.Rounded.Edit, "Editar", tint = Color(0xFF666666), modifier = Modifier.size(16.dp))
+            IconButton(onClick = onEdit, modifier = Modifier.align(Alignment.BottomStart).size(48.dp)) {
+                Icon(Icons.Rounded.Edit, "Editar", tint = Color(0xFF666666), modifier = Modifier.size(18.dp))
             }
-            IconButton(onClick = onDelete, modifier = Modifier.align(Alignment.BottomEnd).size(32.dp)) {
-                Icon(Icons.Rounded.Delete, "Eliminar", tint = DangerColor, modifier = Modifier.size(16.dp))
+            IconButton(onClick = onDelete, modifier = Modifier.align(Alignment.BottomEnd).size(48.dp)) {
+                Icon(Icons.Rounded.Delete, "Eliminar", tint = DangerColor, modifier = Modifier.size(18.dp))
             }
         }
     }
@@ -469,7 +499,7 @@ private fun ParentPictCard(
 private fun SquareIcon(onClick: () -> Unit, content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(48.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(MutedSurface)
             .clickable(onClick = onClick),
@@ -480,11 +510,8 @@ private fun SquareIcon(onClick: () -> Unit, content: @Composable () -> Unit) {
 @Composable
 private fun SpeakingOverlay(visible: Boolean) {
     val accent = Color(0xFF43A047)
-    AnimatedVisibility(
-        visible = visible,
-        enter = fadeIn(),
-        exit = fadeOut()
-    ) {
+    // No animations for the kid-facing overlay: instant show/hide.
+    if (visible) {
         Box(
             modifier = Modifier.fillMaxSize().background(accent.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
